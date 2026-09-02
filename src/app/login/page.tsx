@@ -31,15 +31,22 @@ export default function LoginPage() {
     const { error, user } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
       setError(error.message)
-    } else if (user) {
+      setLoading(false)
+      return
+    }
+
+    if (user) {
       const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single()
       const role = profile?.role
+      setLoading(false)
+
+      // Use window.location for reliable redirect after auth
       if (role === "super_admin" || role === "support") {
-        router.push("/admin")
+        window.location.href = "/admin"
       } else {
-        router.push("/dashboard")
+        window.location.href = "/dashboard"
       }
-      router.refresh()
+      return
     }
     setLoading(false)
   }
