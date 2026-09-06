@@ -7,13 +7,13 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
 
   const { business_name, business_phone, npwp } = await request.json()
-  await supabase.from('reseller_applications').insert({
+  await (supabase.from('reseller_applications').insert({
     user_id: user.id,
     business_name,
     business_phone,
     npwp: npwp || null,
     status: 'pending',
-  })
-  await supabase.from('users').update({ business_name, business_phone, npwp: npwp || null }).eq('id', user.id)
+  }) as any)
+  await (supabase.from('users').update({ business_name, business_phone, npwp: npwp || null }).eq('id', user.id) as any)
   return NextResponse.json({ ok: true })
 }

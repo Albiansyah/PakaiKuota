@@ -28,21 +28,22 @@ export default function StatusPage() {
   const [loading, setLoading] = useState(true)
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
 
-  const fetchStatus = async () => {
-    try {
-      const res = await fetch("/api/status")
-      const result = await res.json()
-      setData(result)
-      setLastRefresh(new Date())
-    } catch (err) {
-      console.error("Failed to fetch status:", err)
-    }
-    setLoading(false)
-  }
-
   useEffect(() => {
-    fetchStatus()
-    const interval = setInterval(fetchStatus, 30000) // Refresh every 30s
+    const fetchStatusLocal = async () => {
+      try {
+        setLoading(true)
+        const res = await fetch("/api/status")
+        const result = await res.json()
+        setData(result)
+        setLastRefresh(new Date())
+      } catch (err) {
+        console.error("Failed to fetch status:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchStatusLocal()
+    const interval = setInterval(fetchStatusLocal, 30000) // Refresh every 30s
     return () => clearInterval(interval)
   }, [])
 

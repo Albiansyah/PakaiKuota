@@ -52,7 +52,13 @@ export default function ApiKeysPage() {
   }
 
   useEffect(() => {
-    if (user) refresh()
+    if (!user) return
+    ;(async () => {
+      const res = await fetch("/api/keys")
+      const data = await res.json()
+      setKeys(data.keys ?? [])
+      setInitialLoading(false)
+    })()
   }, [user])
 
   const createKey = async () => {

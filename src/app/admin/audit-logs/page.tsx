@@ -140,7 +140,7 @@ export default function AdminAuditLogsPage() {
                       <td className="px-4 py-3 text-sm font-mono whitespace-nowrap">
                         {new Date(log.created_at).toLocaleString("id-ID")}
                       </td>
-                      <td className="px-4 py-3 text-sm">{log.admin_email}</td>
+                      <td className="px-4 py-3 text-sm">{log.admin?.email ?? log.admin_id.slice(0, 8)}</td>
                       <td className="px-4 py-3">
                         <Badge variant={actionBadge(log.action)}>
                           {log.action}

@@ -7,6 +7,7 @@ import { useSupabase } from "@/components/providers/supabase-provider"
 import { useLanguage } from "@/components/providers/language-provider"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Grid } from "@/components/layout"
 import {
   Users,
@@ -21,6 +22,7 @@ import {
   Clock,
   DollarSign,
   Search,
+  Package,
 } from "lucide-react"
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 
@@ -61,133 +63,86 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!user) { router.push("/login"); return }
-    fetchData()
-  }, [user, router])
-
-  const fetchData = async () => {
-    try {
-      const [kpiRes, txnRes, modelsRes, auditRes] = await Promise.all([
-        fetch("/api/admin/users"),
-        fetch("/api/admin/transactions"),
-        fetch("/api/admin/models"),
-        fetch("/api/admin/audit"),
-      ])
-
-      if (!kpiRes.ok || !txnRes.ok || !modelsRes.ok || !auditRes.ok) {
-        console.error("Admin API fetch failed", {
-          users: kpiRes.status,
-          transactions: txnRes.status,
-          models: modelsRes.status,
-          audit: auditRes.status,
-        })
-        setLoading(false)
-        return
-      }
-
-      const kpiData = await kpiRes.json()
-      const txnData = await txnRes.json()
-      const modelsData = await modelsRes.json()
-      const auditData = await auditRes.json()
-
-      const users = kpiData.users ?? []
-      const txns = txnData.transactions ?? []
-      const models = modelsData.models ?? []
-      const auditLogs = auditData.logs ?? []
-
-      // KPI calculations
-      const now = new Date()
-      const thisMonth = txns.filter(
-        (t: { status: string; paid_at: string }) =>
-          t.status === "success" &&
-          t.paid_at &&
-          new Date(t.paid_at).getMonth() === now.getMonth() &&
-          new Date(t.paid_at).getFullYear() === now.getFullYear()
-      )
-      const revenueThisMonth = thisMonth.reduce(
-        (sum: number, t: { amount_rupiah: number }) => sum + t.amount_rupiah,
-        0
-      )
-
-      const pending = txns.filter((t: { status: string }) => t.status === "pending").length
-
-      const margins = models
-        .filter((m: { upstream_price_per_token: number; markup_price_per_token: number }) => m.markup_price_per_token > 0)
-        .map((m: { upstream_price_per_token: number; markup_price_per_token: number }) =>
-          ((m.markup_price_per_token - m.upstream_price_per_token) / m.markup_price_per_token) * 100
-        )
-      const avgMargin = margins.length > 0 ? margins.reduce((a: number, b: number) => a + b, 0) / margins.length : 0
-
-      setKpi({
-        totalUsers: users.length,
-        revenueThisMonth,
-        pendingTransactions: pending,
-        avgMargin,
-      })
-
-      // Daily revenue chart (30 hari terakhir)
-      const last30Days: DailyRevenue[] = []
-      for (let i = 29; i >= 0; i--) {
-        const day = new Date()
-        day.setDate(now.getDate() - i)
-        const dayStr = day.toISOString().split("T")[0]
-        const dayTxns = txns.filter(
+    ;(async () => {
+      try {
+        const [kpiRes, txnRes, modelsRes, auditRes] = await Promise.all([
+          fetch("/api/admin/users"),
+          fetch("/api/admin/transactions"),
+          fetch("/api/admin/models"),
+          fetch("/api/admin/audit"),
+        ])
+        if (!kpiRes.ok || !txnRes.ok || !modelsRes.ok || !auditRes.ok) {
+          console.error("Admin API fetch failed", {
+            users: kpiRes.status,
+            transactions: txnRes.status,
+            models: modelsRes.status,
+            audit: auditRes.status,
+          })
+          setLoading(false)
+          return
+        }
+        const kpiData = await kpiRes.json()
+        const txnData = await txnRes.json()
+        const modelsData = await modelsRes.json()
+        const auditData = await auditRes.json()
+        const users = kpiData.users ?? []
+        const txns = txnData.transactions ?? []
+        const models = modelsData.models ?? []
+        const auditLogs = auditData.logs ?? []
+        const now = new Date()
+        const thisMonth = txns.filter(
           (t: { status: string; paid_at: string }) =>
-            t.status === "success" &&
-            t.paid_at &&
-            new Date(t.paid_at).toISOString().split("T")[0] === dayStr
+            t.status === "success" && t.paid_at &&
+            new Date(t.paid_at).getMonth() === now.getMonth() &&
+            new Date(t.paid_at).getFullYear() === now.getFullYear()
         )
-        const dayRevenue = dayTxns.reduce(
-          (sum: number, t: { amount_rupiah: number }) => sum + t.amount_rupiah,
-          0
-        )
-        last30Days.push({
-          name: day.toLocaleDateString("id-ID", { weekday: "short" }),
-          uv: dayRevenue,
-        })
+        const revenueThisMonth = thisMonth.reduce((sum: number, t: { amount_rupiah: number }) => sum + t.amount_rupiah, 0)
+        const pending = txns.filter((t: { status: string }) => t.status === "pending").length
+        // Safe margin calculation with type coercion
+        const margins = models
+          .filter((m: { upstream_price_per_token: number | string; markup_price_per_token: number | string }) => {
+            const markup = Number(m.markup_price_per_token)
+            return markup > 0
+          })
+          .map((m: { upstream_price_per_token: number | string; markup_price_per_token: number | string }) => {
+            const markup = Number(m.markup_price_per_token)
+            const upstream = Number(m.upstream_price_per_token)
+            if (markup <= 0) return 0
+            return ((markup - upstream) / markup) * 100
+          })
+        const avgMargin = margins.length > 0 ? margins.reduce((a: number, b: number) => a + b, 0) / margins.length : 0
+        setKpi({ totalUsers: users.length, revenueThisMonth, pendingTransactions: pending, avgMargin })
+        const last30Days: DailyRevenue[] = []
+        for (let i = 29; i >= 0; i--) {
+          const day = new Date()
+          day.setDate(now.getDate() - i)
+          const dayStr = day.toISOString().split("T")[0]
+          const dayTxns = txns.filter(
+            (t: { status: string; paid_at: string }) => t.status === "success" && t.paid_at && new Date(t.paid_at).toISOString().split("T")[0] === dayStr
+          )
+          const dayRevenue = dayTxns.reduce((sum: number, t: { amount_rupiah: number }) => sum + t.amount_rupiah, 0)
+          last30Days.push({ name: day.toLocaleDateString("id-ID", { weekday: "short" }), uv: dayRevenue })
+        }
+        setDailyRevenue(last30Days)
+        const modelUsageData = models
+          .filter((m: { markup_price_per_token: number | string }) => {
+            const score = Number(m.markup_price_per_token)
+            return score > 0
+          })
+          .map((m: { id: string; name: string; markup_price_per_token: number | string }) => ({
+            name: m.name || `Model ${String(m.id).substring(0, 8)}`,
+            score: Number(m.markup_price_per_token) || 0
+          }))
+          .sort((a: { score: number }, b: { score: number }) => (b.score || 0) - (a.score || 0))
+          .slice(0, 5)
+        setModelUsage(modelUsageData)
+      } catch (e) {
+        console.error(e)
+      } finally {
+        setLoading(false)
       }
-      setDailyRevenue(last30Days)
-
-      // Top 5 model by usage (from models data - using markup as proxy for usage)
-      const modelUsageData = models
-        .filter((m: { markup_price_per_token: number }) => m.markup_price_per_token > 0)
-        .map((m: { id: string; name: string; markup_price_per_token: number }) => ({
-          name: m.name || `Model ${m.id.substring(0, 8)}`,
-          score: m.markup_price_per_token,
-        }))
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 5)
-      setModelUsage(modelUsageData)
-
-      // Recent activities from audit logs
-      const recentActivities = auditLogs
-        .slice(0, 5)
-        .map((log: any) => {
-          let type = "activity"
-          let description = ""
-          if (log.target_type === "transaction") {
-            const txn = log.targets?.transactions?.[0] || {}
-            description = `Transaksi ${txn.order_id || log.target_id} — ${log.action}`
-            type = "transaction"
-          } else if (log.target_type === "user") {
-            const user = log.targets?.users?.[0] || {}
-            description = `User ${user.email || log.target_id} — ${log.action}`
-            type = "user"
-          } else {
-            description = `${log.target_type} — ${log.action}`
-          }
-          return {
-            id: log.id,
-            type,
-            description,
-            created_at: log.created_at,
-          }
-        })
-      setActivities(recentActivities.filter((a) => a.description))
-    } catch (err) {
-      console.error("Failed to fetch data:", err)
-    }
-    setLoading(false)
-  }
+    })()
+  }, [user, router])
 
   const kpiCards = kpi
     ? [
@@ -201,6 +156,7 @@ export default function AdminPage() {
   const adminMenu = [
     { href: "/admin/users", icon: Users, title: "Users", color: "text-blue-500" },
     { href: "/admin/transactions", icon: Receipt, title: "Transaksi", color: "text-green-500" },
+    { href: "/admin/token-packages", icon: Package, title: "Paket Token", color: "text-yellow-500" },
     { href: "/admin/refunds", icon: AlertTriangle, title: "Refund", color: "text-orange-500" },
     { href: "/admin/models", icon: Cpu, title: "Models", color: "text-purple-500" },
     { href: "/admin/margin", icon: BarChart3, title: "Margin", color: "text-[var(--accent)]" },
@@ -222,14 +178,14 @@ export default function AdminPage() {
   }
 
   return (
-    <div>
-      <div className="flex items-center gap-3 mb-6">
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
         <Shield className="h-8 w-8 text-[var(--accent)]" />
         <h1 className="text-3xl font-bold">Overview</h1>
       </div>
 
       {/* Search Bar */}
-      <Card className="mb-6">
+      <Card>
         <CardContent className="p-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-muted-foreground)]" />
@@ -245,7 +201,7 @@ export default function AdminPage() {
       </Card>
 
       {/* KPI Cards */}
-      <Grid cols={4} gap="md" className="mb-6">
+      <Grid cols={4} gap="md">
         {kpiCards.map((card) => (
           <Card key={card.label}>
             <CardContent className="pt-6">
@@ -263,10 +219,10 @@ export default function AdminPage() {
         ))}
       </Grid>
 
-      {/* Bar Chart Section */}
-      <Card className="mb-6">
+      {/* Revenue Chart */}
+      <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Visualisasi Data</CardTitle>
+          <CardTitle className="text-lg">Revenue 30 Hari Terakhir</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
@@ -276,10 +232,21 @@ export default function AdminPage() {
               <Tooltip />
               <Bar dataKey="uv" fill="var(--accent)" />
             </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
 
+      {/* Model Usage Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Model Usage</CardTitle>
+          <CardDescription>Top 5 model berdasarkan markup price</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
             <BarChart data={modelUsage}>
-              <XAxis dataKey="name" tick={{ fontSize: 8, rotate: 45 }} label={{ value: "Model", fontSize: 10 }} />
-              <YAxis label={{ value: "Pemakaian Token", fontSize: 10 }} />
+              <XAxis dataKey="name" tick={{ fontSize: 8, angle: -45, textAnchor: "end" }} label={{ value: "Model", fontSize: 10 }} />
+              <YAxis label={{ value: "Price Score", fontSize: 10 }} />
               <Tooltip />
               <Bar dataKey="score" fill="var(--accent)" />
             </BarChart>
@@ -288,13 +255,13 @@ export default function AdminPage() {
       </Card>
 
       {/* Quick Links */}
-      <Card className="mb-6">
+      <Card>
         <CardHeader>
           <CardTitle className="text-lg">Panel Admin</CardTitle>
           <CardDescription>Akses cepat ke halaman admin</CardDescription>
         </CardHeader>
         <CardContent>
-          <Grid cols={5} gap="sm">
+          <Grid cols={3} gap="sm">
             {adminMenu.map((item) => (
               <Link key={item.href} href={item.href}>
                 <div className="flex items-center gap-3 p-3 rounded-lg border border-[var(--color-border)] hover:border-[var(--accent)]/50 transition-colors cursor-pointer">

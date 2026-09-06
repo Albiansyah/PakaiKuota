@@ -19,7 +19,7 @@ export async function GET(request: Request) {
   if (!rate) return NextResponse.json({ error: 'no rate' }, { status: 502 })
 
   const supabase = await createClient()
-  await supabase.from('forex_history').insert({ base: 'USD', quote: 'IDR', rate })
+  await (supabase.from('forex_history').insert({ base: 'USD', quote: 'IDR', rate }) as any)
 
   if (Math.abs(rate - (data.previous ?? rate)) / rate > 0.03) {
     const text = `FX drift >3%: USD/IDR=${rate}`

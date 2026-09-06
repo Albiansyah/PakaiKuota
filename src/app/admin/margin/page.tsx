@@ -13,6 +13,7 @@ import {
   Loader2,
   AlertTriangle,
 } from "lucide-react"
+import { getModelTierLabel } from "@/lib/model-tier-labels"
 
 type ModelMarkup = {
   id: string
@@ -128,7 +129,7 @@ export default function AdminMarginPage() {
                   <AlertTriangle className={`h-4 w-4 shrink-0 ${isNegative ? "text-[var(--color-destructive)]" : "text-[var(--color-warning)]"}`} />
                 )}
                 <Badge variant={m.tier === "murah" ? "default" : m.tier === "mahal" ? "destructive" : "secondary"} className="w-16 justify-center shrink-0">
-                  {m.tier}
+                  {getModelTierLabel(m.tier)}
                 </Badge>
               </div>
             )

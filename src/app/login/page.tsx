@@ -28,23 +28,34 @@ export default function LoginPage() {
     setLoading(true)
     setError(null)
 
-    const { error, user } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
       setError(error.message)
       setLoading(false)
       return
     }
 
-    if (user) {
-      const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single()
+    if (data.user) {
+      // Fetch user role from users table
+      const { data: profile } = await supabase.from("users").select("role").eq("id", data.user.id).single() as { data: { role: string } | null }
       const role = profile?.role
+
+      // If profile not found, try to fetch again or use default
+      // Admin users should have profile in users table
+      if (!profile) {
+        console.warn("User profile not found in users table, using router.push for redirect")
+        router.push("/dashboard")
+        setLoading(false)
+        return
+      }
+
       setLoading(false)
 
-      // Use window.location for reliable redirect after auth
+      // Redirect based on role
       if (role === "super_admin" || role === "support") {
-        window.location.href = "/admin"
+        router.push("/admin")
       } else {
-        window.location.href = "/dashboard"
+        router.push("/dashboard")
       }
       return
     }
@@ -55,7 +66,7 @@ export default function LoginPage() {
     setGoogleLoading(true)
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/dashboard` },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     })
     setGoogleLoading(false)
   }

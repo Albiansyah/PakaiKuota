@@ -12,12 +12,12 @@ export async function GET(request: Request) {
   const transactionId = url.searchParams.get('transactionId')
   if (!transactionId) return NextResponse.json({ error: 'transactionId required' }, { status: 400 })
 
-  const { data: txn } = await supabase
+  const { data: txn } = await (supabase
     .from('transactions')
     .select('*')
     .eq('id', transactionId)
     .eq('user_id', user.id)
-    .single()
+    .single() as any)
   if (!txn) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const subtotal = txn.amount_rupiah

@@ -34,23 +34,24 @@ export default function AdminRefundsPage() {
 
   useEffect(() => {
     if (!user) { router.push("/login"); return }
-    fetchRefunds()
+    ;(async () => {
+      try {
+        const res = await fetch("/api/admin/transactions")
+        if (!res.ok) throw new Error("Unauthorized")
+        const data = await res.json()
+        const refundRequests = (data.transactions ?? []).filter(
+          (t: { status: string }) => t.status === "refund_requested"
+        )
+        setRefunds(refundRequests)
+      } catch (err) {
+        console.error("Failed to fetch refunds:", err)
+      } finally {
+        setLoading(false)
+      }
+    })()
   }, [user, router])
 
-  const fetchRefunds = async () => {
-    try {
-      const res = await fetch("/api/admin/transactions")
-      if (!res.ok) throw new Error("Unauthorized")
-      const data = await res.json()
-      const refundRequests = (data.transactions ?? []).filter(
-        (t: { status: string }) => t.status === "refund_requested"
-      )
-      setRefunds(refundRequests)
-    } catch (err) {
-      console.error("Failed to fetch refunds:", err)
-    }
-    setLoading(false)
-  }
+  // fetchRefunds removed
 
   const processRefund = async (id: string, action: "refund" | "reject") => {
     if (action === "reject" && !confirm("Tolak permintaan refund ini?")) return
@@ -95,7 +96,7 @@ export default function AdminRefundsPage() {
             </p>
           </div>
         </div>
-        <Button variant="outline" size="icon" onClick={fetchRefunds}>
+        <Button variant="outline" size="icon" onClick={() => location.reload()}>
           <RefreshCw className="h-4 w-4" />
         </Button>
       </div>

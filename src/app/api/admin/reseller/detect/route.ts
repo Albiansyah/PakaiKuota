@@ -10,11 +10,11 @@ export async function GET() {
 
   const supabase = await createClient()
   const since = new Date(Date.now() - 30 * 86400 * 1000).toISOString()
-  const { data } = await supabase
+  const { data } = await (supabase
     .from('transactions')
     .select('user_id, amount_rupiah')
     .eq('status', 'success')
-    .gte('created_at', since)
+    .gte('created_at', since) as any)
 
   const totals: Record<string, number> = {}
   for (const t of data ?? []) {

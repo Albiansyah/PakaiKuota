@@ -8,22 +8,22 @@ export async function POST(request: Request) {
   }
 
   const supabase = await createClient()
-  const { data: txn } = await supabase
+  const { data: txn } = await (supabase
     .from('transactions')
     .select('*')
     .eq('order_id', order_id)
-    .single()
+    .single() as any)
 
   if (!txn) return NextResponse.json({ error: 'not found' }, { status: 404 })
   if (txn.status !== 'success') return NextResponse.json({ skipped: true })
 
   // mark as auto-refunded (manual reconciliation still logged)
-  await supabase.from('refund_requests').insert({
+  await (supabase.from('refund_requests').insert({
     user_id: txn.user_id,
     transaction_id: txn.id,
     amount: txn.amount_rupiah,
     reason: 'auto: upstream failure',
     status: 'pending',
-  })
+  }) as any)
   return NextResponse.json({ ok: true })
 }

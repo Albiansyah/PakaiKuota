@@ -7,10 +7,10 @@ export async function GET() {
   if (!guard.ok) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const supabase = await createClient()
-  const { data } = await supabase
+  const { data } = await (supabase
     .from('reseller_applications')
     .select('*')
-    .eq('status', 'pending')
+    .eq('status', 'pending') as any)
   return NextResponse.json({ applications: data ?? [] })
 }
 
@@ -20,9 +20,9 @@ export async function PATCH(request: Request) {
 
   const { id, decision } = await request.json()
   const supabase = await createClient()
-  await supabase
+  await (supabase
     .from('reseller_applications')
     .update({ status: decision, decided_at: new Date().toISOString() })
-    .eq('id', id)
+    .eq('id', id) as any)
   return NextResponse.json({ ok: true })
 }

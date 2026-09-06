@@ -38,20 +38,21 @@ export default function AdminTransactionsPage() {
 
   useEffect(() => {
     if (!user) { router.push("/login"); return }
-    fetchTransactions()
+    ;(async () => {
+      try {
+        const res = await fetch("/api/admin/transactions")
+        if (!res.ok) throw new Error("Unauthorized")
+        const data = await res.json()
+        setTxns(data.transactions ?? [])
+      } catch (err) {
+        console.error("Failed to fetch transactions:", err)
+      } finally {
+        setLoading(false)
+      }
+    })()
   }, [user, router])
 
-  const fetchTransactions = async () => {
-    try {
-      const res = await fetch("/api/admin/transactions")
-      if (!res.ok) throw new Error("Unauthorized")
-      const data = await res.json()
-      setTxns(data.transactions ?? [])
-    } catch (err) {
-      console.error("Failed to fetch transactions:", err)
-    }
-    setLoading(false)
-  }
+  // fetchTransactions removed
 
   const processRefund = async (id: string) => {
     if (!confirm("Proses refund untuk transaksi ini?")) return
@@ -94,7 +95,7 @@ export default function AdminTransactionsPage() {
           <Receipt className="h-8 w-8 text-[var(--accent)]" />
           <h1 className="text-3xl font-bold">Transaksi</h1>
         </div>
-        <Button variant="outline" size="icon" onClick={fetchTransactions}>
+        <Button variant="outline" size="icon" onClick={() => location.reload()}>
           <RefreshCw className="h-4 w-4" />
         </Button>
       </div>

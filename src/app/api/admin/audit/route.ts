@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   if (!guard.ok) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const supabase = await createClient()
-  const { data, error } = await supabase
+  const { data, error } = await (supabase
     .from('admin_audit_logs')
     .select(`
       *,
@@ -16,7 +16,7 @@ export async function GET(request: Request) {
       )
     `)
     .order('created_at', { ascending: false })
-    .limit(20)
+    .limit(20) as any)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ logs: data })
@@ -31,13 +31,13 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
 
-  const { error } = await supabase.from('admin_audit_logs').insert({
+  const { error } = await (supabase.from('admin_audit_logs').insert({
     admin_id: user.id,
     action,
     target_type,
     target_id,
     details,
-  })
+  }) as any)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true })

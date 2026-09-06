@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useSupabase } from "@/components/providers/supabase-provider"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,6 +16,7 @@ import {
   XCircle,
   Save,
 } from "lucide-react"
+import { getModelTierLabel } from "@/lib/model-tier-labels"
 
 type Model = {
   id: string
@@ -36,6 +37,7 @@ export default function AdminModelsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
   const [saving, setSaving] = useState<string | null>(null)
+  const [rate, setRate] = useState(15000)
 
   useEffect(() => {
     if (!user) { router.push("/login"); return }
@@ -51,13 +53,18 @@ export default function AdminModelsPage() {
       setLoading(false)
     }
     fetchModels()
+    fetch("/api/forex").then((r) => r.json()).then((d) => setRate(d.rate ?? 15000)).catch(() => {})
   }, [user, router])
 
   const handleSync = async () => {
     setSyncing(true)
     try {
       await fetch("/api/admin/models/sync", { method: "POST" })
-      await fetchModels()
+      const res = await fetch("/api/admin/models")
+      if (res.ok) {
+        const data = await res.json()
+        setModels(data.models ?? [])
+      }
     } catch (err) {
       console.error("Failed to sync models:", err)
     }
@@ -170,11 +177,11 @@ export default function AdminModelsPage() {
                         <td className="px-4 py-3 text-sm">{m.provider}</td>
                         <td className="px-4 py-3">
                           <Badge variant={m.tier === "murah" ? "default" : m.tier === "mahal" ? "destructive" : "secondary"}>
-                            {m.tier}
+                            {getModelTierLabel(m.tier)}
                           </Badge>
                         </td>
                         <td className="px-4 py-3 text-right font-mono text-xs">
-                          {(m.upstream_price_per_token * 15000).toFixed(2)}
+                          {(m.upstream_price_per_token * rate).toFixed(2)}
                         </td>
                         <td className="px-4 py-3 text-right font-mono text-xs">
                           {isEditing ? (
@@ -204,7 +211,7 @@ export default function AdminModelsPage() {
                               className="cursor-pointer hover:text-[var(--accent)]"
                               onClick={() => startEdit(m)}
                             >
-                              {(m.markup_price_per_token * 15000).toFixed(2)}
+                              {(m.markup_price_per_token * rate).toFixed(2)}
                             </span>
                           )}
                         </td>

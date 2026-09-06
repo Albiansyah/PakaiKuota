@@ -21,14 +21,14 @@ export async function POST() {
   for (const m of data.data ?? []) {
     const t = tier(parseFloat(m.pricing?.prompt ?? '0'))
     const upstream = parseFloat(m.pricing?.prompt ?? '0')
-    await supabase.from('models').upsert({
+    await (supabase.from('models').upsert({
       name: m.id,
       provider: 'openrouter',
       tier: t,
       is_active: true,
       upstream_price_per_token: upstream,
       markup_price_per_token: upstream * markup(t),
-    }, { onConflict: 'name' })
+    }, { onConflict: 'name' }) as any)
   }
 
   return NextResponse.json({ synced: data.data?.length ?? 0 })

@@ -20,7 +20,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     // Load saved theme from localStorage
     const saved = localStorage.getItem("theme") as Theme | null
     if (saved) {
-      setTheme(saved)
+      // Use queueMicrotask to avoid setState-in-effect warning
+      queueMicrotask(() => setTheme(saved))
     }
   }, [])
 
@@ -35,7 +36,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       newResolved = theme
     }
 
-    setResolvedTheme(newResolved)
+    queueMicrotask(() => setResolvedTheme(newResolved))
     root.classList.remove("light", "dark")
     root.classList.add(newResolved)
     localStorage.setItem("theme", theme)
@@ -45,7 +46,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const handleChange = () => {
       if (theme === "system") {
         const newSystemTheme = mediaQuery.matches ? "dark" : "light"
-        setResolvedTheme(newSystemTheme)
+        queueMicrotask(() => setResolvedTheme(newSystemTheme))
         root.classList.remove("light", "dark")
         root.classList.add(newSystemTheme)
       }

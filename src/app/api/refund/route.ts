@@ -7,23 +7,23 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
 
   const { transactionId, reason } = await request.json()
-  const { data: txn } = await supabase
+  const { data: txn } = await (supabase
     .from('transactions')
     .select('*')
     .eq('id', transactionId)
     .eq('user_id', user.id)
-    .single()
+    .single() as any)
 
   if (!txn || txn.status !== 'success') {
     return NextResponse.json({ error: 'Invalid transaction' }, { status: 400 })
   }
 
-  await supabase.from('refund_requests').insert({
+  await (supabase.from('refund_requests').insert({
     user_id: user.id,
     transaction_id: transactionId,
     amount: txn.amount_rupiah,
     reason,
     status: 'pending',
-  })
+  }) as any)
   return NextResponse.json({ ok: true })
 }

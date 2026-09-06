@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Container, Section, Grid } from "@/components/layout"
 import { ArrowRight, CheckCircle2, QrCode, Zap, Shield, Copy, Check } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 const codeExample = `curl https://api.pakaikuota.id/v1/chat/completions \\
   -H "Authorization: Bearer $PK_KEY" \\
@@ -20,16 +20,29 @@ const features = [
   { titleKey: "features.price.title", descKey: "features.price.desc", icon: Shield },
 ]
 
-const models = [
-  { name: "gpt-4o-mini", provider: "OpenAI", price: "1.500", tier: "Entry" },
-  { name: "gemini-1.5-flash", provider: "Google", price: "1.500", tier: "Entry" },
-  { name: "claude-haiku", provider: "Anthropic", price: "2.000", tier: "Entry" },
-  { name: "gpt-4o", provider: "OpenAI", price: "15.000", tier: "Premium" },
-]
+type ModelItem = {
+  name: string
+  provider: string
+  tier: string
+  markup_price_per_token: number
+}
 
 export default function LandingPage() {
   const { t } = useLanguage()
   const [copied, setCopied] = useState(false)
+  const [models, setModels] = useState<ModelItem[]>([])
+  const [rate, setRate] = useState(15000)
+
+  useEffect(() => {
+    fetch("/api/models")
+      .then((r) => r.json())
+      .then((d) => setModels((d.models ?? []).slice(0, 4)))
+      .catch(() => setModels([]))
+    fetch("/api/forex")
+      .then((r) => r.json())
+      .then((d) => setRate(d.rate ?? 15000))
+      .catch(() => {})
+  }, [])
 
   const copyToClipboard = async () => {
     await navigator.clipboard.writeText(codeExample)
@@ -138,13 +151,13 @@ export default function LandingPage() {
                     <code className="font-mono text-sm text-[var(--text-primary)]">
                       {model.name}
                     </code>
-                    <Badge variant={model.tier === "Premium" ? "warning" : "secondary"}>
-                      {t(model.tier === "Premium" ? "models.tier.premium" : "models.tier.entry")}
+                    <Badge variant={model.tier === "Premium" || model.tier === "mahal" ? "warning" : "secondary"}>
+                      {t(model.tier === "Premium" || model.tier === "mahal" ? "models.tier.premium" : "models.tier.entry")}
                     </Badge>
                   </div>
                   <p className="text-xs text-[var(--text-tertiary)] mb-2">{model.provider}</p>
                   <p className="font-mono text-lg font-semibold text-[var(--accent-text)]">
-                    Rp {model.price}
+                    Rp {(model.markup_price_per_token * rate * 1000).toLocaleString("id-ID", { maximumFractionDigits: 0 })}/1K
                   </p>
                 </CardContent>
               </Card>
@@ -156,6 +169,72 @@ export default function LandingPage() {
               <Button variant="outline" className="gap-2">
                 {t("models.viewAll")}
                 <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        </Container>
+      </Section>
+
+      {/* Loyalty Section */}
+      <Section variant="surface" className="py-16">
+        <Container>
+          <div className="text-center mb-10">
+            <h2 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-3">
+              Loyalty Program — Makin Beli, Makin Hemat
+            </h2>
+            <p className="text-[var(--text-secondary)] max-w-lg mx-auto">
+              Setiap pembelian menambah saldo loyaltymu. Naik tier dan dapatkan bonus token serta diskon lebih besar!
+            </p>
+          </div>
+
+          <Grid cols={3} gap="lg">
+            <Card className="bg-[var(--bg-base)] border-[var(--border-color)] text-center">
+              <CardContent className="pt-8 pb-6">
+                <div className="text-4xl mb-4">🥉</div>
+                <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">Bronze</h3>
+                <p className="text-sm text-[var(--text-tertiary)] mb-4">Tier default untuk semua user</p>
+                <div className="space-y-2 text-sm">
+                  <p className="text-[var(--text-secondary)]">Bonus: 0%</p>
+                  <p className="text-[var(--text-secondary)]">Diskon: 0%</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-[var(--bg-base)] border-[var(--accent)]/50 text-center relative">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <Badge variant="accent">Rekomendasi</Badge>
+              </div>
+              <CardContent className="pt-8 pb-6">
+                <div className="text-4xl mb-4">🥈</div>
+                <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">Silver</h3>
+                <p className="text-sm text-[var(--text-tertiary)] mb-4">Total beli ≥ Rp1.000.000</p>
+                <div className="space-y-2 text-sm">
+                  <p className="text-[var(--accent-text)] font-medium">Bonus: 5%</p>
+                  <p className="text-[var(--accent-text)] font-medium">Diskon: 5%</p>
+                  <p className="text-[var(--text-tertiary)]">Priority Support</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-[var(--bg-base)] border-[var(--border-color)] text-center">
+              <CardContent className="pt-8 pb-6">
+                <div className="text-4xl mb-4">🥇</div>
+                <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">Gold</h3>
+                <p className="text-sm text-[var(--text-tertiary)] mb-4">Total beli ≥ Rp5.000.000</p>
+                <div className="space-y-2 text-sm">
+                  <p className="text-[var(--accent-text)] font-medium">Bonus: 15%</p>
+                  <p className="text-[var(--accent-text)] font-medium">Diskon: 15%</p>
+                  <p className="text-[var(--text-tertiary)]">Priority Support</p>
+                  <p className="text-[var(--text-tertiary)]">Custom Model Access</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <div className="text-center mt-8">
+            <Link href="/register">
+              <Button variant="outline" size="lg">
+                Mulai Kumpulkan Loyalty
               </Button>
             </Link>
           </div>

@@ -40,19 +40,20 @@ export default function AdminResellerPage() {
       router.push("/login")
       return
     }
-    fetchApplications()
+    ;(async () => {
+      try {
+        const res = await fetch("/api/admin/reseller")
+        const data = await res.json()
+        setApps(data.applications ?? [])
+      } catch (err) {
+        console.error("Failed to fetch reseller applications:", err)
+      } finally {
+        setLoading(false)
+      }
+    })()
   }, [user, router])
 
-  const fetchApplications = async () => {
-    try {
-      const res = await fetch("/api/admin/reseller")
-      const data = await res.json()
-      setApps(data.applications ?? [])
-    } catch (err) {
-      console.error("Failed to fetch reseller applications:", err)
-    }
-    setLoading(false)
-  }
+  // fetchApplications removed
 
   const handleDecision = async (id: string, decision: "approved" | "rejected") => {
     setProcessing(id)

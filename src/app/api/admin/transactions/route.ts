@@ -7,11 +7,11 @@ export async function GET() {
   if (!guard.ok) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const supabase = await createClient()
-  const { data, error } = await supabase
+  const { data, error } = await (supabase
     .from('transactions')
     .select('id, user_id, order_id, amount_rupiah, status, payment_method, paid_at, created_at')
     .order('created_at', { ascending: false })
-    .limit(200)
+    .limit(200) as any)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ transactions: data })
@@ -26,11 +26,11 @@ export async function PATCH(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
 
-  const { data: txn } = await supabase
+  const { data: txn } = await (supabase
     .from('transactions')
     .select('*')
     .eq('id', transactionId)
-    .single()
+    .single() as any)
 
   if (!txn) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
@@ -38,22 +38,22 @@ export async function PATCH(request: Request) {
     if (guard.role === 'support' && txn.amount_rupiah > 100000) {
       return NextResponse.json({ error: 'Nominal exceeds support limit' }, { status: 403 })
     }
-    await supabase
+    await (supabase
       .from('transactions')
       .update({ status: 'refunded', refunded_amount: txn.amount_rupiah })
-      .eq('id', transactionId)
-    await supabase
+      .eq('id', transactionId) as any)
+    await (supabase
       .from('users')
       .update({ balance_rupiah: 0 })
-      .eq('id', txn.user_id)
+      .eq('id', txn.user_id) as any)
   }
 
-  await supabase.from('admin_audit_logs').insert({
+  await (supabase.from('admin_audit_logs').insert({
     admin_id: user.id,
     action,
     target_type: 'transaction',
     target_id: transactionId,
-  })
+  }) as any)
 
   return NextResponse.json({ ok: true })
 }

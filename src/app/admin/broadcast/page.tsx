@@ -32,21 +32,20 @@ export default function AdminBroadcastPage() {
   const [title, setTitle] = useState("")
   const [message, setMessage] = useState("")
 
-  const fetchAnnouncements = async () => {
-    try {
-      const res = await fetch("/api/admin/announcements")
-      if (!res.ok) throw new Error("Unauthorized")
-      const data = await res.json()
-      setAnnouncements(data.announcements ?? [])
-    } catch (err) {
-      console.error("Failed to fetch announcements:", err)
-    }
-    setLoading(false)
-  }
-
   useEffect(() => {
     if (!user) { router.push("/login"); return }
-    fetchAnnouncements()
+    ;(async () => {
+      try {
+        const res = await fetch("/api/admin/announcements")
+        if (!res.ok) throw new Error("Unauthorized")
+        const data = await res.json()
+        setAnnouncements(data.announcements ?? [])
+      } catch (err) {
+        console.error("Failed to fetch announcements:", err)
+      } finally {
+        setLoading(false)
+      }
+    })()
   }, [user, router])
 
   const handleSend = async () => {
@@ -64,7 +63,6 @@ export default function AdminBroadcastPage() {
         setSent(true)
         setTitle("")
         setMessage("")
-        fetchAnnouncements()
       }
     } catch (err) {
       console.error("Failed to send announcement:", err)

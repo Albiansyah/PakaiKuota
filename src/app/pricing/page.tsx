@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import Link from "next/link"
 import { useLanguage } from "@/components/providers/language-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,23 +9,24 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Container, Section, Grid } from "@/components/layout"
-import { Check, Zap, Calculator } from "lucide-react"
+import { Check, Zap, Calculator, ArrowRight } from "lucide-react"
 
 const PACKAGES = [
-  { id: "starter", nameKey: "pricing.starter.name", descKey: "pricing.starter.desc", days: 7, quota: 50000 },
-  { id: "standard", nameKey: "pricing.standard.name", descKey: "pricing.standard.desc", days: 14, quota: 150000, popular: true },
-  { id: "pro", nameKey: "pricing.pro.name", descKey: "pricing.pro.desc", days: 30, quota: 400000 },
+  { id: "pemula", name: "Coba Dulu", desc: "Untuk percobaan dan project kecil", days: 30, quota_rupiah: 20000, popular: false },
+  { id: "harian", name: "Hemat", desc: "Paling populer untuk penggunaan harian", days: 60, quota_rupiah: 90000, popular: true },
+  { id: "pro", name: "Ekonomis", desc: "Untuk penggunaan intensif dan developer", days: 90, quota_rupiah: 175000, popular: false },
+  { id: "enterprise", name: "Maksi", desc: "Volume besar, harga terbaik", days: 180, quota_rupiah: 800000, popular: false },
 ]
 
 function getDailyRate(days: number): number {
-  if (days <= 7) return 500
-  if (days <= 14) return 400
   if (days <= 30) return 300
-  return 250
+  if (days <= 60) return 250
+  if (days <= 90) return 200
+  return 150
 }
 
-function calcTotalPrice(quota: number, days: number): number {
-  return quota + days * getDailyRate(days)
+function calcTotalPrice(quota_rupiah: number, days: number): number {
+  return quota_rupiah + days * getDailyRate(days)
 }
 
 export default function PricingPage() {
@@ -70,7 +72,7 @@ export default function PricingPage() {
             <p className="text-[var(--text-secondary)]">{t("pricing.packages.desc")}</p>
           </div>
 
-          <Grid cols={3} gap="lg" className="mb-16">
+          <Grid cols={4} gap="lg" className="mb-16">
             {PACKAGES.map((pkg) => (
               <Card
                 key={pkg.id}
@@ -80,45 +82,48 @@ export default function PricingPage() {
               >
                 {pkg.popular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <Badge variant="accent">{t("pricing.popular")}</Badge>
+                    <Badge variant="accent">Paling Populer</Badge>
                   </div>
                 )}
                 <CardHeader className="text-center pt-8">
-                  <CardTitle className="text-xl">{t(pkg.nameKey)}</CardTitle>
-                  <CardDescription>{t(pkg.descKey)}</CardDescription>
+                  <CardTitle className="text-xl">{pkg.name}</CardTitle>
+                  <CardDescription>{pkg.desc}</CardDescription>
                 </CardHeader>
                 <CardContent className="text-center space-y-6">
                   <div>
                     <p className="text-3xl font-bold text-[var(--text-primary)]">
-                      Rp {pkg.quota.toLocaleString("id-ID")}
+                      Rp {pkg.quota_rupiah.toLocaleString("id-ID")}
                     </p>
-                  <p className="text-sm text-[var(--text-secondary)]">
-                    {t("pricing.days").replace("{n}", String(pkg.days))}
-                  </p>
+                    <p className="text-sm text-[var(--text-secondary)]">
+                      {pkg.days} hari aktif
+                    </p>
                   </div>
 
-                  <ul className="space-y-3 text-sm text-left">
+                  <ul className="space-y-2 text-sm text-left">
                     <li className="flex items-start gap-2">
                       <Check className="h-4 w-4 text-[var(--success)] mt-0.5 shrink-0" />
-                      <span>{t("pricing.quota").replace("{n}", pkg.quota.toLocaleString("id-ID"))}</span>
+                      <span>Kuota Rp {pkg.quota_rupiah.toLocaleString("id-ID")}</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <Check className="h-4 w-4 text-[var(--success)] mt-0.5 shrink-0" />
-                      <span>{t("pricing.days").replace("{n}", String(pkg.days))}</span>
+                      <span>{pkg.days} hari aktif</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <Check className="h-4 w-4 text-[var(--success)] mt-0.5 shrink-0" />
-                      <span>Rp {getDailyRate(pkg.days).toLocaleString("id-ID")} {t("pricing.custom.dailyRate").toLowerCase()}</span>
+                      <span>Rp {getDailyRate(pkg.days).toLocaleString("id-ID")}/hari</span>
                     </li>
                   </ul>
 
-                  <Button
-                    variant={pkg.popular ? "accent" : "outline"}
-                    className="w-full"
-                    size="lg"
-                  >
-                    {t("pricing.custom.buy")}
-                  </Button>
+                  <Link href="/register">
+                    <Button
+                      variant={pkg.popular ? "accent" : "outline"}
+                      className="w-full"
+                      size="lg"
+                    >
+                      Beli Sekarang
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </Link>
                 </CardContent>
               </Card>
             ))}

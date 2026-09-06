@@ -79,10 +79,10 @@ const dictionaries: Record<Locale, Record<string, string>> = {
     "pricing.custom.total": "Total Harga",
     "pricing.custom.dailyRate": "Tarif/Hari",
     "pricing.custom.buy": "Beli Paket",
-    "pricing.starter.name": "Starter",
-    "pricing.starter.desc": "Buat coba-coba/testing",
-    "pricing.standard.name": "Standard",
-    "pricing.standard.desc": "Paling umum buat side project",
+    "pricing.pemula.name": "Pemula",
+    "pricing.pemula.desc": "Buat coba-coba/testing",
+    "pricing.harian.name": "Harian",
+    "pricing.harian.desc": "Paling umum buat side project",
     "pricing.pro.name": "Pro",
     "pricing.pro.desc": "Buat produksi kecil",
     "pricing.days": "{n} hari",
@@ -231,10 +231,10 @@ const dictionaries: Record<Locale, Record<string, string>> = {
     "pricing.custom.total": "Total Price",
     "pricing.custom.dailyRate": "Daily Rate",
     "pricing.custom.buy": "Buy Package",
-    "pricing.starter.name": "Starter",
-    "pricing.starter.desc": "For testing and experimentation",
-    "pricing.standard.name": "Standard",
-    "pricing.standard.desc": "Most common for side projects",
+    "pricing.pemula.name": "Starter",
+    "pricing.pemula.desc": "For testing and experimentation",
+    "pricing.harian.name": "Daily",
+    "pricing.harian.desc": "Most common for side projects",
     "pricing.pro.name": "Pro",
     "pricing.pro.desc": "For small production workloads",
     "pricing.days": "{n} days",
@@ -324,7 +324,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const saved = localStorage.getItem("locale") as Locale | null
     if (saved && (saved === "id" || saved === "en")) {
-      setLocale(saved)
+      queueMicrotask(() => setLocale(saved))
     }
   }, [])
 

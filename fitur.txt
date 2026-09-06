@@ -1,0 +1,87 @@
+# Task: Perbaikan Multi-Area — PakaiKuota
+
+Task ini ada 6 area berbeda. Untuk area **BUG** (1-3), langsung analisa + eksekusi fix, tapi tunjukkan diff dulu sebelum commit. Untuk area **KEPUTUSAN PRODUK** (4-6), **JANGAN langsung eksekusi** — investigasi kondisi sekarang, lalu ajukan 2-3 opsi konkret, tunggu approval sebelum ubah kode/copy.
+
+---
+
+## BAGIAN A — BUG FIX (analisa → eksekusi → tunjukkan diff)
+
+### A1. Login sebagai admin/super_admin malah balik ke homepage, bukan ke `/admin`
+
+Konteks: sebelumnya ada refactor middleware (Opsi A — hapus duplikat Supabase client, `updateSession` return `user`). Bug baru ini kemungkinan regresi dari refactor itu, ATAU bug terpisah di logic redirect setelah login.
+
+Langkah investigasi:
+1. Cek `middleware.ts` root — pastikan hasil refactor kemarin masih benar: apakah role `super_admin`/`support` dicek dengan query yang tepat, dan redirect ke `/admin` benar-benar dieksekusi (bukan ke `/` atau default lain)?
+2. Cek halaman login (`handleLogin`) — pastikan logic `if (role === "super_admin" || role === "support") window.location.href = "/admin"` masih ada dan role yang di-fetch dari tabel `users` sesuai dengan yang di-set di database untuk akun admin yang dites.
+3. Cek apakah ada redirect lain yang lebih general (misal di root `page.tsx` atau layout) yang menangkap semua user ter-autentikasi dan mengarahkan ke homepage sebelum logic role-check sempat jalan.
+4. Reproduce: login pakai akun admin, catat urutan network request/redirect yang terjadi (pakai tab Network di browser kalau perlu).
+
+Fix, lalu tunjukkan diff sebelum commit.
+
+### A2. UI saling menimpa (elemen overlap)
+
+Dari screenshot: di halaman `/admin`, chart/grafik dan card statistik (Panel Admin, Margin, Reseller, dll) saling tumpang tindih — keliatan seperti dua komponen di-render di posisi yang sama (kemungkinan `position: absolute`/`fixed` tanpa container yang benar, atau grid/flex layout yang salah, atau dua komponen render bareng karena state loading yang tidak di-handle dengan baik).
+
+Langkah:
+1. Identifikasi komponen mana saja yang tumpang tindih di halaman `/admin` (screenshot menunjukkan chart bar & card grid).
+2. Cek CSS/Tailwind class yang dipakai — cari penggunaan `absolute`/`fixed` yang salah context, atau grid/flex container yang tidak proper (misal card grid dan chart section berada di parent yang sama tanpa `relative` positioning yang benar).
+3. Cek apakah ini terjadi juga di halaman lain (dashboard user, dsb) — screenshot cuma nunjukkin `/admin`, tapi cek menyeluruh.
+4. Fix layout-nya, tunjukkan before/after (screenshot atau deskripsi perubahan CSS).
+
+### A3. Hilangkan semua data dummy
+
+1. Cari semua tempat yang masih pakai hardcoded/mock data (chart stats, angka margin, reseller, dll — yang di screenshot keliatan seperti placeholder angka aneh: "1.000165", "1.000055").
+2. Ganti dengan query asli ke Supabase (tabel yang relevan: transaksi, users, models, dsb — sesuaikan dengan schema yang ada).
+3. Kalau ada data yang emang belum ada sumbernya (misal fitur belum lengkap di backend), laporkan sebagai temuan terpisah — jangan dipaksa diisi data asli kalau belum ada endpoint/tabel-nya.
+
+---
+
+## BAGIAN B — KEPUTUSAN PRODUK (investigasi → usulkan opsi → TUNGGU APPROVAL)
+
+### B1. Harga paket kompetitif
+
+Konteks: kompetitor termurah ada di Rp20.000. Cek harga PakaiKuota sekarang (screenshot nunjukkin Basic Rp13.500, Pro Rp20.000, Custom mulai Rp50.000) — perlu dievaluasi ulang.
+
+1. Investigasi struktur biaya PakaiKuota saat ini (harga upstream API per request/model, margin yang diinginkan — cek catatan/dokumentasi internal kalau ada).
+2. Ajukan 2-3 opsi struktur harga baru yang tetap kompetitif tapi tidak rugi margin. Sertakan perhitungan margin per opsi.
+3. **Jangan ubah angka harga di kode/database sebelum opsi ini di-approve.**
+
+### B2. Rate limit per jam/hari — gimana modelnya di web ini?
+
+Kompetitor (lihat screenshot Bluepack: "100/5h · 1.000/7d") punya struktur request-per-window (per 5 jam, per 7 hari). Cek apakah PakaiKuota sudah punya mekanisme serupa di backend/schema, atau cuma quota total tanpa windowing.
+
+1. Cek schema database & logic quota-checking yang ada sekarang — apakah sudah support rate limiting per jam/hari, atau baru sebatas total kuota?
+2. Kalau belum ada, jelaskan effort yang dibutuhkan untuk menambahkan (perubahan schema, logic di API gateway/middleware kuota).
+3. Ajukan rekomendasi: apakah perlu ditambahkan sekarang, atau cukup total kuota dulu untuk MVP — dengan alasan masing-masing.
+
+### B3. Rename tier (Basic/Pro/Custom → nama yang lebih menggoda psikologis)
+
+1. Cek semua tempat nama tier ini dipakai (UI, database enum/kolom, dokumentasi) supaya rename konsisten.
+2. Ajukan 2-3 set nama alternatif dengan psikologi harga yang lebih menarik (contoh pendekatan: anchoring dengan nama yang menyiratkan value/status, bukan sekadar "murah-tengah-mahal" — tapi JANGAN pakai nama yang menyesatkan soal isi paketnya).
+3. Tunggu approval nama sebelum ubah ke kode.
+
+### B4. Fitur loyalty — tampilkan di landing page & dashboard user
+
+Konteks: ada fitur loyalty yang sempat ditambahkan sebelumnya di backend/database, tapi belum ditampilkan di UI.
+
+1. Investigasi dan laporkan: fitur loyalty yang sudah ada sejauh ini itu apa persisnya? (skema poin, cara dapat poin, tabel di database, ada API endpoint-nya atau belum).
+2. Ajukan desain singkat:
+   - Section baru di landing page yang menjelaskan program loyalty (copy singkat, bukan full implementasi dulu).
+   - Widget/section di dashboard user yang menampilkan poin yang sudah didapat (posisi di UI, data apa yang ditampilkan).
+3. Setelah desain di-approve, baru implementasi.
+
+---
+
+## Format Laporan
+
+Untuk Bagian A (bug fix): tunjukkan diff tiap file + hasil `npm run build`.
+
+Untuk Bagian B (keputusan produk): tulis laporan per poin dengan struktur:
+```
+## B1 / B2 / B3 / B4
+### Kondisi Sekarang
+### Opsi yang Diajukan
+### Rekomendasi
+```
+
+Jangan commit apapun dari Bagian B sebelum ada approval eksplisit.

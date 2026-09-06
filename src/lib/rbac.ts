@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 
 export type Role = 'user' | 'super_admin' | 'support'
 
+type UserRoleRow = { role: Role }
+
 export async function getUserRole(): Promise<Role | null> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -10,8 +12,8 @@ export async function getUserRole(): Promise<Role | null> {
     .from('users')
     .select('role')
     .eq('id', user.id)
-    .single()
-  return (data?.role as Role) ?? 'user'
+    .single() as { data: UserRoleRow | null }
+  return data?.role ?? 'user'
 }
 
 export async function requireRole(allowed: Role[]) {

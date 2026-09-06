@@ -17,24 +17,24 @@ export async function POST(request: Request) {
 
   const orderId = generateOrderId()
 
-  const { error } = await supabase.from("transactions").insert({
+  const { error } = await (supabase.from("transactions").insert({
     user_id: user.id,
     order_id: orderId,
     amount_rupiah: amount,
     status: "pending",
     payment_method: "qris",
     expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
-  })
+  }) as any)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   const { paymentUrl, pakasirTxId } = await createQrisTransaction({ amount, orderId })
 
   // Update transaction with Pakasir details
-  const { error: updError } = await supabase
+  const { error: updError } = await (supabase
     .from("transactions")
     .update({ pakasir_tx_id: pakasirTxId })
-    .eq("order_id", orderId)
+    .eq("order_id", orderId) as any)
 
   if (updError) return NextResponse.json({ error: updError.message }, { status: 500 })
 

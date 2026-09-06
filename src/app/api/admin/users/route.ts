@@ -15,11 +15,11 @@ export async function GET() {
   if (!guard.ok) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const supabase = await createClient()
-  const { data, error } = await supabase
+  const { data, error } = await (supabase
     .from('users')
     .select('id, email, name, role, balance_rupiah, is_suspended, business_name, business_phone, npwp, created_at, deleted_at')
     .order('created_at', { ascending: false })
-    .limit(100)
+    .limit(100) as any)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ users: data })
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
 
   // Create user via Supabase Admin API
-  const { data: newUser, error: createError } = await supabase
+  const { data: newUser, error: createError } = await (supabase
     .from('users')
     .insert({
       email,
@@ -56,19 +56,18 @@ export async function POST(request: Request) {
       role: role || "user",
       balance_rupiah: 0,
       email_confirm: true,
-    })
-    .select()
+    }) as any)
 
   if (createError) return NextResponse.json({ error: createError.message }, { status: 500 })
 
   // Log the creation
-  await supabase.from('admin_audit_logs').insert({
+  await (supabase.from('admin_audit_logs').insert({
     admin_id: user.id,
     action: "create_user",
     target_type: "user",
     target_id: newUser?.[0]?.id,
     details: { action: "create_user", target_id: newUser?.[0]?.id, reason: "Manual user creation by admin" },
-  })
+  }) as any)
 
   return NextResponse.json({ user: newUser?.[0] })
 }
@@ -84,11 +83,11 @@ export async function PATCH(request: Request) {
 
   // Support restrictions
   const isSupport = guard.role === 'support'
-  const targetUser = await supabase
+  const targetUser = await (supabase
     .from('users')
     .select('role, is_suspended')
     .eq('id', userId)
-    .single()
+    .single() as any)
 
   if (!targetUser.data) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
@@ -116,41 +115,41 @@ export async function PATCH(request: Request) {
   }
 
   // Update the user field
-  const updateData: any = { [field]: value }
-  const { error: updateError } = await supabase
+  const updateData: Record<string, unknown> = { [field]: value }
+  const { error: updateError } = await (supabase
     .from('users')
     .update(updateData)
-    .eq('id', userId)
+    .eq('id', userId) as any)
 
   if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 })
 
   // If adjusting saldo, log to audit
   if (field === "balance_rupiah") {
-    await supabase.from('admin_audit_logs').insert({
+    await (supabase.from('admin_audit_logs').insert({
       admin_id: user.id,
       action: "adjust_balance",
       target_type: "user",
       target_id: userId,
       details: { action: "adjust_balance", field, value, reason },
-    })
+    }) as any)
   }
 
   // If soft-delete, log to audit
   if (field === "is_suspended" && value === true) {
-    await supabase.from('admin_audit_logs').insert({
+    await (supabase.from('admin_audit_logs').insert({
       admin_id: user.id,
       action: "soft_delete_user",
       target_type: "user",
       target_id: userId,
       details: { action: "soft_delete_user", reason },
-    })
+    }) as any)
   }
 
-  const { data: updatedUser, error: fetchError } = await supabase
+  const { data: updatedUser, error: fetchError } = await (supabase
     .from('users')
     .select()
     .eq('id', userId)
-    .single()
+    .single() as any)
 
   if (fetchError) return NextResponse.json({ error: fetchError.message }, { status: 500 })
 

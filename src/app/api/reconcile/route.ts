@@ -9,7 +9,7 @@ export async function POST() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
 
-  const { data: users } = await supabase.from('users').select('id, balance_rupiah')
+  const { data: users } = await (supabase.from('users').select('id, balance_rupiah') as any)
   if (!users) return NextResponse.json({ reconciled: 0 })
 
   const redis = getRedis()
@@ -22,14 +22,14 @@ export async function POST() {
       // conservative: snap cache toward lower
       const corrected = Math.min(cached, u.balance_rupiah)
       await redis.set(`quota:${u.id}`, corrected)
-      await supabase.from('reconciliation_logs').insert({
+      await (supabase.from('reconciliation_logs').insert({
         source: 'redis_vs_supabase',
         expected_amount: u.balance_rupiah,
         actual_amount: cached,
         difference: diff,
         status: 'alert',
         notes: `auto-corrected to ${corrected}`,
-      })
+      }) as any)
       alerts++
     }
   }

@@ -11,10 +11,10 @@ export async function POST() {
 
   const supabase = await createClient()
   const since = new Date(Date.now() - 3600 * 1000).toISOString()
-  const { data: logs } = await supabase
+  const { data: logs } = await (supabase
     .from('usage_logs')
     .select('user_id, api_key_id, cost_rupiah, request_metadata')
-    .gte('created_at', since)
+    .gte('created_at', since) as any)
 
   if (!logs) return NextResponse.json({ flagged: 0 })
 

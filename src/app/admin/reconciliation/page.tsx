@@ -34,21 +34,22 @@ export default function AdminReconciliationPage() {
 
   useEffect(() => {
     if (!user) { router.push("/login"); return }
-    fetchLogs()
+    ;(async () => {
+      setLoading(true)
+      try {
+        const res = await fetch("/api/reconcile")
+        if (!res.ok) throw new Error("Unauthorized")
+        const data = await res.json()
+        setLogs(data.logs ?? [])
+      } catch (err) {
+        console.error("Failed to fetch reconciliation logs:", err)
+      } finally {
+        setLoading(false)
+      }
+    })()
   }, [user, router])
 
-  const fetchLogs = async () => {
-    setLoading(true)
-    try {
-      const res = await fetch("/api/reconcile")
-      if (!res.ok) throw new Error("Unauthorized")
-      const data = await res.json()
-      setLogs(data.logs ?? [])
-    } catch (err) {
-      console.error("Failed to fetch reconciliation logs:", err)
-    }
-    setLoading(false)
-  }
+  // fetchLogs removed
 
   const statusBadge = (status: string) => {
     switch (status) {
@@ -79,7 +80,7 @@ export default function AdminReconciliationPage() {
             </p>
           </div>
         </div>
-        <Button variant="outline" size="icon" onClick={fetchLogs}>
+        <Button variant="outline" size="icon" onClick={() => location.reload()}>
           <RefreshCw className="h-4 w-4" />
         </Button>
       </div>

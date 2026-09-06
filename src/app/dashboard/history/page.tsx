@@ -44,8 +44,9 @@ export default function HistoryPage() {
       setTxns(data.transactions ?? [])
     } catch (err) {
       console.error("Failed to fetch transactions:", err)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   useEffect(() => {
@@ -64,7 +65,6 @@ export default function HistoryPage() {
 
     if (res.ok) {
       alert("Refund berhasil diajukan")
-      fetchTransactions()
     } else {
       alert("Gagal mengajukan refund")
     }

@@ -26,11 +26,11 @@ export async function POST(request: Request) {
   const supabase = await createClient()
   const since = new Date(Date.now() - WINDOW_HOURS * 3600 * 1000).toISOString()
 
-  const { count } = await supabase
+  const { count } = await (supabase
     .from('signup_log')
     .select('*', { count: 'exact', head: true })
     .eq('ip', ip)
-    .gte('created_at', since)
+    .gte('created_at', since) as any)
 
   if ((count ?? 0) >= SIGNUP_LIMIT_PER_IP) {
     return NextResponse.json({ error: 'Batas signup per IP terlampaui' }, { status: 429 })
@@ -43,6 +43,6 @@ export async function POST(request: Request) {
   })
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
 
-  await supabase.from('signup_log').insert({ ip, email })
+  await (supabase.from('signup_log').insert({ ip, email }) as any)
   return NextResponse.json({ ok: true })
 }

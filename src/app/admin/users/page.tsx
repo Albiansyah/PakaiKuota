@@ -40,20 +40,21 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     if (!user) { router.push("/login"); return }
-    fetchUsers()
+    ;(async () => {
+      try {
+        const res = await fetch("/api/admin/users")
+        if (!res.ok) throw new Error("Unauthorized")
+        const data = await res.json()
+        setUsers(data.users ?? [])
+      } catch (err) {
+        console.error("Failed to fetch users:", err)
+      } finally {
+        setLoading(false)
+      }
+    })()
   }, [user, router])
 
-  const fetchUsers = async () => {
-    try {
-      const res = await fetch("/api/admin/users")
-      if (!res.ok) throw new Error("Unauthorized")
-      const data = await res.json()
-      setUsers(data.users ?? [])
-    } catch (err) {
-      console.error("Failed to fetch users:", err)
-    }
-    setLoading(false)
-  }
+  // fetchUsers removed
 
   const toggleSuspend = async (id: string, currentStatus: boolean) => {
     setActionLoading(id)
