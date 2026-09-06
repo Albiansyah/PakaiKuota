@@ -4,6 +4,9 @@ export type LoyaltyTier = "bronze" | "silver" | "gold"
 export type PurchaseType = "package" | "custom"
 
 export type Database = {
+  __InternalSupabase: {
+    PostgrestVersion: "12"
+  }
   public: {
     Tables: {
       users: {
