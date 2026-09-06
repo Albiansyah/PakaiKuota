@@ -19,5 +19,5 @@ export type UpdateResult = { error: Error | null }
 // Helper to create typed Supabase client
 export async function getDb() {
   const supabase = await createClient()
-  return supabase as ReturnType<typeof createClient>
+  return supabase
 }
