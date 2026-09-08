@@ -1,0 +1,20 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/authorize-timeout-sweep",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/forex-check",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/reconciliation",
+      "schedule": "17 * * * *"
+    },
+    {
+      "path": "/api/cron/topup-expiry",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}
