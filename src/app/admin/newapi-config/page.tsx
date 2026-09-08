@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
+import { toast } from "sonner"
 
 type NewAPIConfig = {
   id: number
@@ -37,8 +38,8 @@ export default function NewAPIConfigPage() {
         if (error) throw error
         setConfig(data as NewAPIConfig)
         setForm(data as NewAPIConfig)
-      } catch (e) {
-        console.error(e)
+      } catch {
+        toast.error("Konfigurasi NewAPI tidak bisa dimuat")
       } finally {
         setLoading(false)
       }
@@ -66,10 +67,10 @@ export default function NewAPIConfigPage() {
       if (fetchError) throw fetchError
       setConfig(data as NewAPIConfig)
       setSaved(true)
+      toast.success("Konfigurasi NewAPI tersimpan")
       setTimeout(() => setSaved(false), 3000)
-    } catch (e) {
-      console.error(e)
-      alert("Gagal menyimpan konfigurasi")
+    } catch {
+      toast.error("Gagal menyimpan konfigurasi")
     } finally {
       setSaving(false)
     }
