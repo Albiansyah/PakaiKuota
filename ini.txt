@@ -1,32 +1,21 @@
-Ada koreksi penting soal §7.1 PRD terkait webhook Pakasir — provider ini
-TIDAK menyediakan HMAC signature/webhook secret sama sekali. Baca dokumentasi
-resmi: https://pakasir.com/p/docs bagian D (Webhook) dan E (Transaction Detail API).
+Sudah dikonfirmasi via `git log --oneline -5`: commit b55f048 adalah HEAD
+lokal DAN origin/main DAN commit yang sama persis dibuild Vercel. Tidak
+ada perbedaan source tree, tidak ada monorepo/root directory issue, tidak
+ada branch mismatch — semua identik.
 
-Ganti pendekatan verifikasi webhook dari "HMAC signature check" menjadi
-"verify-then-credit pattern":
+Jadi hipotesis "source berbeda" itu SALAH, hentikan investigasi ke arah
+itu. Diagnosis awal sebelum ini (missing dependencies + naming mismatch
+createClient/createSupabaseServerClient) yang BENAR dan perlu diperbaiki
+sekarang — kemungkinan besar package.json belum ter-update dengan benar
+saat commit "Merge remote main with local implementation" (b8c51de),
+menyebabkan dependency baru (dropdown-menu, label, slot, switch, tabs,
+class-variance-authority, clsx, lucide-react, tailwind-merge) tidak
+tercatat meski filenya sudah ada di commit.
 
-1. Webhook masuk ke /api/webhook/pakasir HANYA dianggap sebagai TRIGGER,
-   bukan sumber kebenaran. Jangan pernah kredit saldo langsung dari body
-   webhook yang diterima.
-
-2. Begitu webhook diterima (apapun isinya), server WAJIB memanggil balik:
-   GET https://app.pakasir.com/api/transactiondetail?project={slug}&amount={amount}&order_id={order_id}&api_key={PAKASIR_API_KEY}
-
-3. Bandingkan response dari API call ini dengan record transaksi di database
-   kita sendiri (order_id yang kita generate, amount yang kita expect).
-   HANYA kredit saldo jika:
-   - status di response API == "completed"
-   - amount di response API == amount yang tercatat di transaksi kita
-   - order_id cocok dengan transaksi pending yang kita punya
-
-4. Hapus semua kode terkait PAKASIR_WEBHOOK_SECRET dan HMAC verification
-   (crypto.timingSafeEqual dkk untuk webhook Pakasir) — provider ini tidak
-   punya mekanisme itu, jadi kode itu tidak akan pernah terpakai dan
-   memberi rasa aman palsu.
-
-5. Idempotency tetap wajib (unique constraint di kolom yang menyimpan
-   order_id kita sendiri di tabel transactions) — ini tidak berubah, hanya
-   cara verifikasi keasliannya yang berbeda dari asumsi PRD sebelumnya.
-
-6. PAKASIR_API_KEY (bukan PAKASIR_WEBHOOK_SECRET) yang dipakai untuk
-   panggilan verifikasi ini — pastikan .env.local pakai key yang benar.
+Lanjutkan fix sesuai rencana sebelumnya:
+1. npm install untuk semua package yang hilang, verifikasi package.json
+   ter-update dengan benar
+2. Tambahkan alias export di src/lib/supabase/server.ts:
+   export { createSupabaseServerClient as createClient }
+3. Jalankan npm run build LOKAL, pastikan sukses tanpa error
+4. Baru commit & push setelah build lokal terbukti hijau

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useSupabase } from "@/components/providers/supabase-provider"
+import type { Database } from "@/types/supabase"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -32,7 +33,7 @@ export default function NewAPIConfigPage() {
   useEffect(() => {
     ;(async () => {
       try {
-        const { data, error } = await supabase.from("newapi_config").select("*").single()
+        const { data, error } = await (supabase as any).from("newapi_config").select("*").single()
         if (error) throw error
         setConfig(data as NewAPIConfig)
         setForm(data as NewAPIConfig)
@@ -56,7 +57,7 @@ export default function NewAPIConfigPage() {
     try {
       const { error } = await supabase
         .from("newapi_config")
-        .upsert({ ...form, id: 1 }, { onConflict: "id" })
+        .upsert({ ...form, id: 1 } as never, { onConflict: "id" })
       if (error) throw error
       const { data, error: fetchError } = await supabase
         .from("newapi_config")

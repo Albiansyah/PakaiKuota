@@ -14,7 +14,7 @@ import type { Database } from '@/types/supabase';
 export async function createSupabaseServerClient() {
   const cookieStore = await cookies();
 
-  return createServerClient<Database>(
+  return createServerClient(
     publicEnv.supabaseUrl,
     publicEnv.supabaseAnonKey,
     {
@@ -36,3 +36,5 @@ export async function createSupabaseServerClient() {
     },
   );
 }
+
+export { createSupabaseServerClient as createClient };

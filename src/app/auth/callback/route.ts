@@ -1,14 +1,14 @@
-import { NextResponse } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
 import { createServerClient } from "@supabase/ssr"
 import type { Database } from "@/types/supabase"
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get("code")
-  const supabaseResponse = NextResponse.next({ request })
+  const supabaseResponse = NextResponse.next()
 
   if (code) {
-    const supabase = createServerClient<Database>(
+    const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
@@ -16,9 +16,8 @@ export async function GET(request: Request) {
           getAll() {
             return request.cookies.getAll()
           },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-            supabaseResponse.cookies.set(name, value)
+          setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
+            cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options))
           },
         },
       }
