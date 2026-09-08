@@ -24,6 +24,7 @@ type NewAPIConfig = {
 
 export default function NewAPIConfigPage() {
   const { supabase } = useSupabase()
+  const [testing, setTesting] = useState(false)
   const router = useRouter()
   const [config, setConfig] = useState<NewAPIConfig | null>(null)
   const [loading, setLoading] = useState(true)
@@ -50,6 +51,14 @@ export default function NewAPIConfigPage() {
     const { name, value, type } = e.target
     setForm(prev => ({ ...prev, [name]: type === "number" ? Number(value) || 0 : value }))
     setSaved(false)
+  }
+
+  const testConnection = async () => {
+    setTesting(true)
+    const response = await fetch('/api/admin/newapi-config', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ base_url: form.base_url, api_key: form.api_key }) })
+    setTesting(false)
+    if (response.ok) toast.success('Koneksi NewAPI berhasil')
+    else toast.error('Koneksi NewAPI gagal')
   }
 
   const save = async () => {
@@ -174,9 +183,12 @@ export default function NewAPIConfigPage() {
       <Separator />
 
       <div className="flex items-center gap-4">
-        <Button onClick={save} disabled={saving} size="lg">
-          {saving ? "Menyimpan..." : "Simpan Konfigurasi"}
-        </Button>
+<Button variant="outline" onClick={testConnection} disabled={testing || !form.base_url || !form.api_key} size="lg">
+           {testing ? "Menguji..." : "Test koneksi"}
+         </Button>
+         <Button onClick={save} disabled={saving} size="lg">
+           {saving ? "Menyimpan..." : "Simpan Konfigurasi"}
+         </Button>
         {saved && (
           <span className="text-sm text-green-600 dark:text-green-400">✓ Konfigurasi tersimpan!</span>
         )}
