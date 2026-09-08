@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
-import { serverEnv } from '@/lib/env';
+import { pakasirEnv } from '@/lib/env';
 
 const MIN_TOPUP_RUPIAH = 10_000;
 const MAX_TOPUP_RUPIAH = 50_000_000;
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   try {
-    const env = serverEnv();
+    const env = pakasirEnv();
     const paymentUrl = new URL(`https://app.pakasir.com/pay/${encodeURIComponent(env.pakasirSlug)}/${amount}`);
     paymentUrl.searchParams.set('order_id', orderId);
     paymentUrl.searchParams.set('redirect', `${env.appUrl}/topup/${encodeURIComponent(orderId)}/success`);

@@ -30,10 +30,14 @@ export const publicEnv = {
  * because `process.env.SUPABASE_SERVICE_ROLE_KEY` is undefined in the browser
  * bundle (it is not prefixed with NEXT_PUBLIC_).
  */
-export function serverEnv() {
+function assertServer() {
   if (typeof window !== 'undefined') {
-    throw new Error('serverEnv() must never be called on the client.');
+    throw new Error('Server environment accessed from client.');
   }
+}
+
+export function serverEnv() {
+  assertServer();
   return {
     supabaseUrl: publicEnv.supabaseUrl,
     supabaseServiceRoleKey: required(
@@ -42,12 +46,21 @@ export function serverEnv() {
     ),
     pakasirSlug: required('PAKASIR_SLUG', process.env.PAKASIR_SLUG),
     pakasirApiKey: required('PAKASIR_API_KEY', process.env.PAKASIR_API_KEY),
-    appUrl: required('APP_URL', process.env.APP_URL),
+    appUrl: required('APP_URL', process.env.APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL),
     upstreamChatCompletionsUrl: required(
       'UPSTREAM_CHAT_COMPLETIONS_URL',
       process.env.UPSTREAM_CHAT_COMPLETIONS_URL,
     ),
     upstreamApiKey: required('UPSTREAM_API_KEY', process.env.UPSTREAM_API_KEY),
     redisUrl: process.env.REDIS_URL ?? 'redis://localhost:6379',
+  };
+}
+
+export function pakasirEnv() {
+  assertServer();
+  return {
+    pakasirSlug: required('PAKASIR_SLUG', process.env.PAKASIR_SLUG),
+    pakasirApiKey: required('PAKASIR_API_KEY', process.env.PAKASIR_API_KEY),
+    appUrl: required('APP_URL', process.env.APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL),
   };
 }

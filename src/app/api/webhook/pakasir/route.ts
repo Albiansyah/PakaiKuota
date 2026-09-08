@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { NextResponse } from 'next/server';
-import { serverEnv } from '@/lib/env';
+import { pakasirEnv } from '@/lib/env';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 
 type PakasirWebhook = {
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const env = serverEnv();
+  const env = pakasirEnv();
   if (project && project !== env.pakasirSlug) {
     return NextResponse.json({ error: { code: 'PROJECT_MISMATCH' } }, { status: 400 });
   }
