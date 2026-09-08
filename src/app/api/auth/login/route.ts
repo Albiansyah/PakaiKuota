@@ -7,5 +7,6 @@ export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.signInWithPassword({ email: body.email, password: body.password });
   if (error) return NextResponse.json({ error: 'invalid_credentials' }, { status: 401 });
-  return NextResponse.json({ user: data.user, session: data.session });
+  const { data: profile } = await supabase.from('users').select('role').eq('id', data.user.id).maybeSingle();
+  return NextResponse.json({ user: data.user, role: profile?.role ?? 'user' });
 }

@@ -25,7 +25,8 @@ export default function LoginPage() {
       setMessage("Email atau password tidak valid.");
       return;
     }
-    router.push("/dashboard");
+    const data = await response.json() as { role?: string };
+    router.push(data.role === "super_admin" || data.role === "support" ? "/admin" : "/dashboard");
     router.refresh();
   }
 
