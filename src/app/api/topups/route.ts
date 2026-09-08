@@ -36,7 +36,6 @@ export async function POST(request: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const method = new URL(request.url).searchParams.get('method') ?? 'qris';
   try {
     const env = serverEnv();
     const paymentUrl = new URL(`https://app.pakasir.com/pay/${encodeURIComponent(env.pakasirSlug)}/${amount}`);
@@ -47,7 +46,7 @@ export async function POST(request: Request) {
       order_id: orderId,
       amount_rupiah: amount,
       payment_provider: 'pakasir',
-      payment: { order_id: orderId, amount, payment_method: method, payment_url: paymentUrl.toString() },
+      payment: { order_id: orderId, amount, payment_url: paymentUrl.toString() },
     }, { status: 201 });
   } catch (paymentError) {
     return NextResponse.json(
