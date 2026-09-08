@@ -22,7 +22,8 @@ export default function LoginPage() {
     });
     if (!response.ok) {
       setState("error");
-      setMessage("Email atau password tidak valid.");
+      const errorData = await response.json().catch(() => null) as { error?: string } | null;
+      setMessage(errorData?.error === "email_not_confirmed" ? "Email belum dikonfirmasi. Cek inbox email kamu." : "Email atau password tidak valid.");
       return;
     }
     const data = await response.json() as { role?: string };
