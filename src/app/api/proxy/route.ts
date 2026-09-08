@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { serverEnv } from '@/lib/env'
 
 // Default price per token in IDR (simplified - should come from database)
 const PRICE_PER_TOKEN = 0.0001
@@ -41,10 +42,13 @@ export async function POST(request: Request) {
     )
   }
 
-  // forward to New API
-  const resp = await fetch('https://newapi.example.com/v1/completions', {
+  const env = serverEnv()
+  const resp = await fetch(env.upstreamChatCompletionsUrl, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${env.upstreamApiKey}`,
+    },
     body: JSON.stringify({ model, prompt_tokens, completion_tokens }),
   })
   const data = await resp.json()

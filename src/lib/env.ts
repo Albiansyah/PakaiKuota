@@ -42,6 +42,11 @@ export function serverEnv() {
     ),
     pakasirSlug: required('PAKASIR_SLUG', process.env.PAKASIR_SLUG),
     pakasirApiKey: required('PAKASIR_API_KEY', process.env.PAKASIR_API_KEY),
+    upstreamChatCompletionsUrl: required(
+      'UPSTREAM_CHAT_COMPLETIONS_URL',
+      process.env.UPSTREAM_CHAT_COMPLETIONS_URL,
+    ),
+    upstreamApiKey: required('UPSTREAM_API_KEY', process.env.UPSTREAM_API_KEY),
     redisUrl: process.env.REDIS_URL ?? 'redis://localhost:6379',
   };
 }
