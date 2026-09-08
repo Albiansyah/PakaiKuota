@@ -133,7 +133,7 @@ export default function AdminModelsPage() {
           {syncing ? (
             <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Syncing...</>
           ) : (
-            <><RefreshCw className="h-4 w-4 mr-2" />Sync OpenRouter</>
+            <><RefreshCw className="h-4 w-4 mr-2" />Sync NewAPI</>
           )}
         </Button>
       </div>
