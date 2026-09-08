@@ -10,6 +10,7 @@ import {
 } from '@/lib/gateway/billing';
 import { enforceRateLimit } from '@/lib/gateway/rate-limit';
 import { estimateCostUsd } from '@/lib/gateway/pricing';
+import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 
 const MAX_BODY_BYTES = 1_000_000;
 const DEFAULT_MAX_TOKENS = 4096;
@@ -109,8 +110,9 @@ export async function POST(request: Request) {
     return errorResponse(code, 'Unable to reserve quota', code === 'INSUFFICIENT_BALANCE' ? 402 : 500);
   }
 
-  const upstreamUrl = process.env.UPSTREAM_CHAT_COMPLETIONS_URL;
-  const upstreamKey = process.env.UPSTREAM_API_KEY;
+  const config = await createSupabaseAdminClient().from('newapi_config').select('base_url, api_key, is_active').eq('id', 1).maybeSingle();
+  const upstreamUrl = config.data?.is_active === false ? null : config.data?.base_url ?? process.env.UPSTREAM_CHAT_COMPLETIONS_URL;
+  const upstreamKey = config.data?.is_active === false ? null : config.data?.api_key ?? process.env.UPSTREAM_API_KEY;
   if (!upstreamUrl || !upstreamKey) {
     await finalizeRequest({ requestId: authorization.data, status: 'failed' });
     return errorResponse('UPSTREAM_ERROR', 'Upstream gateway is not configured', 502);

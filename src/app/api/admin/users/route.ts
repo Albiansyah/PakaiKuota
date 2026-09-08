@@ -12,9 +12,11 @@ export async function GET() {
 export async function PATCH(request: Request) {
   const context = await requireAdmin(["super_admin"]);
   if (!context) return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  const body = await request.json().catch(() => null) as { id?: string; suspended?: boolean } | null;
-  if (!body?.id || typeof body.suspended !== "boolean") return NextResponse.json({ error: "invalid_request" }, { status: 400 });
-  const { data, error } = await context.admin.from("users").update({ suspended_at: body.suspended ? new Date().toISOString() : null }).eq("id", body.id).select("id, suspended_at").single();
+const body = await request.json().catch(() => null) as { id?: string; suspended?: boolean; role?: "user" | "support" | "super_admin" } | null;
+   if (!body?.id || (typeof body.suspended !== "boolean" && !body.role)) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
+   if (body.role && !["user", "support", "super_admin"].includes(body.role)) return NextResponse.json({ error: "invalid_role" }, { status: 400 });
+   const updates = body.role ? { role: body.role } : { suspended_at: body.suspended ? new Date().toISOString() : null };
+   const { data, error } = await context.admin.from("users").update(updates).eq("id", body.id).select("id, role, suspended_at").single();
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json({ user: data });
 }

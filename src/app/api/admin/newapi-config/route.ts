@@ -8,7 +8,7 @@ export async function GET() {
   const supabase = await createClient()
   const { data, error } = await supabase.from('newapi_config').select('*').single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ config: data })
+  return NextResponse.json({ config: data ? { ...data, api_key: data.api_key ? '••••••••' : '' } : null })
 }
 
 export async function PATCH(request: Request) {
