@@ -42,8 +42,11 @@ export default function TopupPage() {
       if (!response.ok) { setMessage(data?.error ?? "Pembayaran tidak bisa dibuat."); return; }
       setMessage("Pembayaran dibuat. Selesaikan pembayaran sesuai detail di bawah.");
       const created = data?.payment;
-      if (created) setPayment(created);
-      try { await loadTransactions(); } catch { setState("error"); }
+      if (!created?.payment_url) {
+        setMessage("Payment URL Pakasir tidak tersedia.");
+        return;
+      }
+      window.location.assign(created.payment_url);
     } catch {
       setMessage("Pembayaran tidak bisa dibuat. Coba lagi.");
     } finally {
