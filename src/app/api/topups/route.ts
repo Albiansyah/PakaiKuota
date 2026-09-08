@@ -2,8 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { createSupabaseAdminClient } from '@/lib/supabase/admin';
-import { createPakasirPayment } from '@/lib/pakasir/client';
-import { isPakasirMethod } from '@/lib/pakasir/methods';
+import { serverEnv } from '@/lib/env';
 
 const MIN_TOPUP_RUPIAH = 10_000;
 const MAX_TOPUP_RUPIAH = 50_000_000;
@@ -38,28 +37,17 @@ export async function POST(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const method = new URL(request.url).searchParams.get('method') ?? 'qris';
-  if (!isPakasirMethod(method)) {
-    return NextResponse.json({ error: 'unsupported_pakasir_method' }, { status: 400 });
-  }
-
   try {
-    const payment = await createPakasirPayment({ method, orderId, amount });
-    const paymentUpdate = await admin.rpc('mark_topup_payment', {
-      p_transaction_id: transactionId,
-      p_payment_method: payment.payment_method ?? method,
-      p_payment_number: payment.payment_number ?? '',
-      p_fee: payment.fee ?? 0,
-      p_total_payment: payment.total_payment ?? amount,
-      p_expires_at: payment.expired_at,
-    });
-    if (paymentUpdate.error) throw new Error(paymentUpdate.error.message);
-
+    const env = serverEnv();
+    const paymentUrl = new URL(`https://app.pakasir.com/pay/${encodeURIComponent(env.pakasirSlug)}/${amount}`);
+    paymentUrl.searchParams.set('order_id', orderId);
+    paymentUrl.searchParams.set('redirect', `${env.appUrl}/topup/${encodeURIComponent(orderId)}/success`);
     return NextResponse.json({
       transaction_id: transactionId,
       order_id: orderId,
       amount_rupiah: amount,
       payment_provider: 'pakasir',
-      payment,
+      payment: { order_id: orderId, amount, payment_method: method, payment_url: paymentUrl.toString() },
     }, { status: 201 });
   } catch (paymentError) {
     return NextResponse.json(

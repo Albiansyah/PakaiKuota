@@ -12,6 +12,7 @@ type CreatePaymentResponse = {
     payment_method?: string;
     payment_number?: string;
     expired_at?: string;
+    payment_url?: string;
   };
 };
 
