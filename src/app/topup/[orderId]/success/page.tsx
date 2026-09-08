@@ -16,7 +16,7 @@ export default function TopupSuccessPage({ params }: { params: Promise<{ orderId
         const response = await fetch(`/api/topups/${encodeURIComponent(orderId)}`, { cache: 'no-store' });
         if (!response.ok) return;
         const data = await response.json() as { transaction: Transaction };
-        if (active) { setTransaction(data.transaction); setLoading(false); }
+        if (active) { setTransaction(data.transaction); setLoading(false); if (data.transaction.status === 'credited' || data.transaction.status === 'failed' || data.transaction.status === 'expired') { if (timer) clearInterval(timer); } }
       };
       load();
       timer = setInterval(load, 5000);

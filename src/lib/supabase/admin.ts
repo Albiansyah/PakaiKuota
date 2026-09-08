@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { serverEnv } from '@/lib/env';
+import { supabaseEnv } from '@/lib/env';
 
 /**
  * Admin client — uses the SERVICE ROLE KEY, which BYPASSES ALL RLS.
@@ -17,7 +17,7 @@ import { serverEnv } from '@/lib/env';
  * A new client is created per call (no shared mutable auth state).
  */
 export function createSupabaseAdminClient(): SupabaseClient {
-  const env = serverEnv();
+  const env = supabaseEnv();
   return createClient(env.supabaseUrl, env.supabaseServiceRoleKey, {
     auth: {
       autoRefreshToken: false,

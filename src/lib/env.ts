@@ -36,6 +36,14 @@ function assertServer() {
   }
 }
 
+export function supabaseEnv() {
+  assertServer();
+  return {
+    supabaseUrl: publicEnv.supabaseUrl,
+    supabaseServiceRoleKey: required('SUPABASE_SERVICE_ROLE_KEY', process.env.SUPABASE_SERVICE_ROLE_KEY),
+  };
+}
+
 export function serverEnv() {
   assertServer();
   return {

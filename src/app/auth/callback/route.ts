@@ -5,9 +5,8 @@ import type { Database } from "@/types/supabase"
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get("code")
-  const supabaseResponse = NextResponse.next()
-
   if (code) {
+    let response = NextResponse.redirect(new URL('/dashboard', requestUrl.origin))
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -17,7 +16,7 @@ export async function GET(request: NextRequest) {
             return request.cookies.getAll()
           },
           setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-            cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options))
+            cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
           },
         },
       }
@@ -53,10 +52,12 @@ export async function GET(request: NextRequest) {
         .eq("id", user.id)
         .single() as any)
 
-      if (updatedProfile?.role === "super_admin" || updatedProfile?.role === "support") {
-        return NextResponse.redirect(new URL("/admin", requestUrl.origin))
-      }
-      return NextResponse.redirect(new URL("/dashboard", requestUrl.origin))
+      const destination = NextResponse.redirect(new URL(
+        updatedProfile?.role === "super_admin" || updatedProfile?.role === "support" ? "/admin" : "/dashboard",
+        requestUrl.origin,
+      ))
+      response.cookies.getAll().forEach((cookie) => destination.cookies.set(cookie))
+      return destination
     }
   }
 
