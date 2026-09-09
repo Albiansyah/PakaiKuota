@@ -4,7 +4,7 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin';
 export async function GET() {
   const { data, error } = await createSupabaseAdminClient()
     .from('models')
-    .select('id, slug, name, tier, input_price_per_1k, output_price_per_1k, markup_percent')
+    .select('id, slug, name, provider, group_name, tier, input_price_per_1k, output_price_per_1k, markup_percent')
     .eq('enabled', true)
     .order('tier')
     .order('name');

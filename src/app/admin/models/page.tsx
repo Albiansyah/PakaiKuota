@@ -29,6 +29,7 @@ type Model = {
   id: string
   name: string
   slug: string
+  group_name: string
   tier: "standard" | "premium" | "ultra"
   input_price_per_1k: number
   output_price_per_1k: number
@@ -106,6 +107,13 @@ export default function AdminModelsPage() {
     setSaving(null)
   }
 
+  const editGroup = async (model: Model) => {
+    const group = prompt("Nama grup model", model.group_name || "Lainnya")?.trim()
+    if (!group || group === model.group_name) return
+    const response = await fetch("/api/admin/models", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ modelId: model.id, group_name: group }) })
+    if (response.ok) setModels((prev) => prev.map((item) => item.id === model.id ? { ...item, group_name: group } : item))
+  }
+
   const toggleActive = async (model: Model) => {
     try {
       await fetch("/api/admin/models", {
@@ -146,8 +154,9 @@ export default function AdminModelsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Model</TableHead>
-                  <TableHead>Provider</TableHead>
+<TableHead>Model</TableHead>
+                   <TableHead>Grup</TableHead>
+                   <TableHead>Provider</TableHead>
                   <TableHead>Tier</TableHead>
                   <TableHead className="text-right">Input / 1K</TableHead>
                   <TableHead className="text-right">Markup</TableHead>
@@ -164,8 +173,9 @@ export default function AdminModelsPage() {
 
                   return (
                     <TableRow key={m.id}>
-                      <TableCell className="font-mono text-sm font-medium">{m.name}</TableCell>
-                      <TableCell className="text-sm">NewAPI</TableCell>
+<TableCell className="font-mono text-sm font-medium">{m.name}</TableCell>
+                       <TableCell><button className="text-sm text-[var(--accent)] underline" onClick={() => editGroup(m)}>{m.group_name || "Lainnya"}</button></TableCell>
+                       <TableCell className="text-sm">NewAPI</TableCell>
                       <TableCell>
                         {tierLabel ? (
                           <Badge variant={tierLabel === "Premium" ? "default" : "secondary"}>{tierLabel}</Badge>

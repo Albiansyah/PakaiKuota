@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
 import { useLanguage } from "@/components/providers/language-provider"
 import { Button } from "@/components/ui/button"
@@ -9,14 +9,10 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Container, Section, Grid } from "@/components/layout"
-import { Check, Zap, Calculator, ArrowRight } from "lucide-react"
+import { Check, Zap, Calculator, ArrowRight, Copy } from "lucide-react"
 
-const PACKAGES = [
-  { id: "pemula", name: "Coba Dulu", desc: "Untuk percobaan dan project kecil", days: 30, quota_rupiah: 20000, popular: false },
-  { id: "harian", name: "Hemat", desc: "Paling populer untuk penggunaan harian", days: 60, quota_rupiah: 90000, popular: true },
-  { id: "pro", name: "Ekonomis", desc: "Untuk penggunaan intensif dan developer", days: 90, quota_rupiah: 175000, popular: false },
-  { id: "enterprise", name: "Maksi", desc: "Volume besar, harga terbaik", days: 180, quota_rupiah: 800000, popular: false },
-]
+type Package = { id: string; name: string; description: string | null; token_amount: number; price_rupiah: number; bonus_percent: number; duration_days: number | null }
+type Model = { id: string; slug: string; name: string; group_name: string; tier: string; input_price_per_1k: number; output_price_per_1k: number }
 
 function getDailyRate(days: number): number {
   if (days <= 30) return 300
@@ -33,6 +29,12 @@ export default function PricingPage() {
   const { t } = useLanguage()
   const [customDays, setCustomDays] = useState(14)
   const [customQuota, setCustomQuota] = useState(100000)
+  const [packages, setPackages] = useState<Package[]>([])
+  const [models, setModels] = useState<Model[]>([])
+  const [copied, setCopied] = useState<string | null>(null)
+  useEffect(() => { fetch('/api/catalog').then((res) => res.json()).then((data) => { setPackages(data.packages ?? []); setModels(data.models ?? []) }).catch(() => { setPackages([]); setModels([]) }) }, [])
+  const groupedModels = models.reduce<Record<string, Model[]>>((groups, model) => { (groups[model.group_name || 'Lainnya'] ??= []).push(model); return groups }, {})
+  const copyModel = async (slug: string) => { await navigator.clipboard.writeText(slug); setCopied(slug); setTimeout(() => setCopied(null), 1500) }
 
   const customTotal = useMemo(() => calcTotalPrice(customQuota, customDays), [customQuota, customDays])
   const customDailyRate = getDailyRate(customDays)
@@ -73,50 +75,50 @@ export default function PricingPage() {
           </div>
 
           <Grid cols={4} gap="lg" className="mb-16">
-            {PACKAGES.map((pkg) => (
+            {packages.map((pkg, index) => (
               <Card
                 key={pkg.id}
                 className={`relative bg-[var(--bg-surface)] border-[var(--border-color)] ${
-                  pkg.popular ? "border-[var(--accent)]" : ""
+                  index === 1 ? "border-[var(--accent)]" : ""
                 }`}
               >
-                {pkg.popular && (
+                {index === 1 && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                     <Badge variant="accent">Paling Populer</Badge>
                   </div>
                 )}
                 <CardHeader className="text-center pt-8">
                   <CardTitle className="text-xl">{pkg.name}</CardTitle>
-                  <CardDescription>{pkg.desc}</CardDescription>
+                  <CardDescription>{pkg.description ?? "Paket penggunaan API"}</CardDescription>
                 </CardHeader>
                 <CardContent className="text-center space-y-6">
                   <div>
                     <p className="text-3xl font-bold text-[var(--text-primary)]">
-                      Rp {pkg.quota_rupiah.toLocaleString("id-ID")}
+                      Rp {pkg.price_rupiah.toLocaleString("id-ID")}
                     </p>
                     <p className="text-sm text-[var(--text-secondary)]">
-                      {pkg.days} hari aktif
+                      {(pkg.duration_days ?? 0)} hari aktif
                     </p>
                   </div>
 
                   <ul className="space-y-2 text-sm text-left">
                     <li className="flex items-start gap-2">
                       <Check className="h-4 w-4 text-[var(--success)] mt-0.5 shrink-0" />
-                      <span>Kuota Rp {pkg.quota_rupiah.toLocaleString("id-ID")}</span>
+                      <span>Kuota Rp {pkg.price_rupiah.toLocaleString("id-ID")}</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <Check className="h-4 w-4 text-[var(--success)] mt-0.5 shrink-0" />
-                      <span>{pkg.days} hari aktif</span>
+                      <span>{(pkg.duration_days ?? 0)} hari aktif</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <Check className="h-4 w-4 text-[var(--success)] mt-0.5 shrink-0" />
-                      <span>Rp {getDailyRate(pkg.days).toLocaleString("id-ID")}/hari</span>
+                      <span>Rp {getDailyRate((pkg.duration_days ?? 0)).toLocaleString("id-ID")}/hari</span>
                     </li>
                   </ul>
 
                   <Link href="/register">
                     <Button
-                      variant={pkg.popular ? "accent" : "outline"}
+                      variant={index === 1 ? "accent" : "outline"}
                       className="w-full"
                       size="lg"
                     >
@@ -129,7 +131,13 @@ export default function PricingPage() {
             ))}
           </Grid>
 
-          {/* Custom Package */}
+           <div className="mb-16">
+             <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Model tersedia</h2>
+             <p className="text-[var(--text-secondary)]">Model aktif dikelompokkan oleh admin. Salin slug untuk dipakai di API.</p>
+             <div className="mt-6 space-y-5">{Object.entries(groupedModels).map(([group, items]) => <section key={group} className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] p-5"><h3 className="font-semibold">{group}</h3><div className="mt-3 grid gap-2 md:grid-cols-2">{items.map((item) => <div key={item.id} className="flex items-center justify-between gap-3 border-b border-[var(--border-color)] py-3"><div className="min-w-0"><p className="truncate font-medium">{item.name}</p><code className="text-xs text-[var(--text-secondary)]">{item.slug}</code></div><Button variant="outline" size="sm" onClick={() => copyModel(item.slug)}><Copy className="mr-1 h-3 w-3" />{copied === item.slug ? "Tersalin" : "Salin"}</Button></div>)}</div></section>)}</div>
+           </div>
+
+           {/* Custom Package */}
           <Card className="bg-[var(--bg-surface)] border-[var(--border-color)]">
             <CardHeader>
               <div className="flex items-center gap-3">

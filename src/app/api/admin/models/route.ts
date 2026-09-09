@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { requireRole } from '@/lib/rbac'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
-const fields = 'id,slug,name,input_price_per_1k,output_price_per_1k,markup_percent,tier,enabled,created_at'
+const fields = 'id,slug,name,group_name,input_price_per_1k,output_price_per_1k,markup_percent,tier,enabled,created_at'
 
 export async function GET() {
   const guard = await requireRole(['super_admin'])
@@ -31,7 +31,7 @@ export async function PATCH(request: Request) {
   if (!guard.ok) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const body = await request.json().catch(() => null) as Record<string, unknown> | null
   if (!body || typeof body.modelId !== 'string') return NextResponse.json({ error: 'invalid_model' }, { status: 400 })
-  const updates = Object.fromEntries(Object.entries(body).filter(([key]) => ['slug', 'name', 'tier', 'input_price_per_1k', 'output_price_per_1k', 'markup_percent', 'enabled'].includes(key)))
+  const updates = Object.fromEntries(Object.entries(body).filter(([key]) => ['slug', 'name', 'group_name', 'tier', 'input_price_per_1k', 'output_price_per_1k', 'markup_percent', 'enabled'].includes(key)))
   const { data, error } = await createSupabaseAdminClient().from('models').update(updates).eq('id', body.modelId).select(fields).single()
   if (error) return NextResponse.json({ error: 'model_save_failed' }, { status: 400 })
   return NextResponse.json({ model: data })
