@@ -104,6 +104,7 @@ export async function POST(request: Request) {
     idempotencyKey,
   });
   if (authorization.error || !authorization.data) {
+    console.error('authorize_request failed', authorization.error);
     const code = authorization.error?.message.includes('INSUFFICIENT_BALANCE')
       ? 'INSUFFICIENT_BALANCE'
       : 'AUTHORIZATION_FAILED';
