@@ -6,12 +6,12 @@ describe('gateway billing estimate', () => {
     id: 'model-id',
     input_price_per_1k: 0.5,
     output_price_per_1k: 1,
-    markup_percent: 0.2,
+    markup_percent: 20,
   };
 
   it('uses input and max output tokens plus markup and forex buffer', () => {
     // upstream=(100*0.5/1000)+(200*1/1000)=0.25;
-    // markup=(0.2+0.03), total=0.3075
+    // markup=(20%+3%), total=0.3075
     expect(estimateCostUsd(100, 200, model)).toBeCloseTo(0.3075);
   });
 

@@ -12,5 +12,5 @@ export function estimateCostUsd(
   const upstream =
     (inputTokens * model.input_price_per_1k) / 1000 +
     (maxTokens * model.output_price_per_1k) / 1000;
-  return upstream * (1 + model.markup_percent + 0.03);
+  return upstream * (1 + model.markup_percent / 100 + 0.03);
 }
