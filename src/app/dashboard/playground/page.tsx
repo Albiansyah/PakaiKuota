@@ -1,9 +1,8 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 type Model = { id: string; object: string; owned_by: string };
-function tokenEstimate(text: string) { return Math.ceil(text.length / 4); }
 
 export default function PlaygroundPage() {
   const [models, setModels] = useState<Model[]>([]);
@@ -11,31 +10,53 @@ export default function PlaygroundPage() {
   const [apiKey, setApiKey] = useState("");
   const [system, setSystem] = useState("You are a concise assistant.");
   const [message, setMessage] = useState("");
-  const [maxTokens, setMaxTokens] = useState(256);
-  const [temperature, setTemperature] = useState(0.7);
-  const [stream, setStream] = useState(true);
   const [responseText, setResponseText] = useState("");
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [tab, setTab] = useState<"response" | "curl" | "javascript">("response");
-  const estimatedTokens = useMemo(() => tokenEstimate(`${system}\n${message}`), [message, system]);
 
-  useEffect(() => { let active = true; fetch("/api/v1/models", { headers: { authorization: `Bearer ${apiKey}` } }).then(async (res) => { if (!active) return; if (!res.ok) { setState("error"); return; } const data = await res.json() as { data: Model[] }; if (active) { setModels(data.data); setModel(data.data[0]?.id ?? ""); setState("ready"); } }).catch(() => { if (active) setState("error"); }); return () => { active = false; }; }, [apiKey]);
+  useEffect(() => {
+    if (!apiKey) return;
+    let active = true;
+    fetch("/api/v1/models", { headers: { authorization: `Bearer ${apiKey}` } })
+      .then(async (res) => {
+        if (!res.ok) throw new Error("API key tidak valid atau model tidak tersedia.");
+        const data = await res.json() as { data: Model[] };
+        if (active) { setModels(data.data); setModel(data.data[0]?.id ?? ""); setState("ready"); }
+      })
+      .catch((err: Error) => { if (active) { setError(err.message); setState("error"); } });
+    return () => { active = false; };
+  }, [apiKey]);
 
   async function submit(event: FormEvent) {
-    event.preventDefault(); setSubmitting(true); setError(""); setResponseText("");
-    const response = await fetch("/api/v1/chat/completions", { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}`, "idempotency-key": crypto.randomUUID() }, body: JSON.stringify({ model, messages: [{ role: "system", content: system }, { role: "user", content: message }], max_tokens: maxTokens, temperature, stream }) });
-    if (!response.ok) { const data = await response.json().catch(() => null) as { error?: { message?: string } } | null; setError(data?.error?.message ?? "Request gagal."); setSubmitting(false); return; }
-    if (!response.body) { setError("Response kosong."); setSubmitting(false); return; }
-    if (!stream) { const data = await response.json(); setResponseText(JSON.stringify(data, null, 2)); setSubmitting(false); return; }
-    const reader = response.body.getReader(); const decoder = new TextDecoder(); let output = "";
-    while (true) { const chunk = await reader.read(); if (chunk.done) break; output += decoder.decode(chunk.value, { stream: true }); setResponseText(output); }
+    event.preventDefault();
+    setSubmitting(true); setError(""); setResponseText("");
+    try {
+      const response = await fetch("/api/v1/chat/completions", {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}`, "idempotency-key": crypto.randomUUID() },
+        body: JSON.stringify({ model, messages: [{ role: "system", content: system }, { role: "user", content: message }], max_tokens: 256, stream: true }),
+      });
+      if (!response.ok) { const data = await response.json().catch(() => null) as { error?: { message?: string } } | null; throw new Error(data?.error?.message ?? "Request gagal."); }
+      if (!response.body) throw new Error("Response kosong.");
+      const reader = response.body.getReader(); const decoder = new TextDecoder(); let output = "";
+      while (true) { const chunk = await reader.read(); if (chunk.done) break; output += decoder.decode(chunk.value, { stream: true }); setResponseText(output); }
+    } catch (err) { setError(err instanceof Error ? err.message : "Request gagal."); }
     setSubmitting(false);
   }
 
-  const curl = `curl https://api.pakaikuota.cloud/v1/chat/completions \\\n  -H "Authorization: Bearer YOUR_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d '${JSON.stringify({ model, messages: [{ role: "user", content: message || "Pesan kamu" }], max_tokens: maxTokens, stream })}'`;
-  const javascript = `const response = await fetch("https://api.pakaikuota.cloud/v1/chat/completions", {\n  method: "POST",\n  headers: { Authorization: "Bearer YOUR_API_KEY", "Content-Type": "application/json" },\n  body: JSON.stringify(${JSON.stringify({ model, messages: [{ role: "user", content: message || "Pesan kamu" }], max_tokens: maxTokens, stream }, null, 2)})\n});`;
-
-  return <div><header className="border-b border-[#d9e0e8] bg-white px-5 py-8 sm:px-8"><p className="text-sm font-semibold text-[#D97B2E]">Developer tool</p><h1 className="mt-2 text-3xl font-semibold tracking-[-0.035em]">Playground</h1><p className="mt-3 max-w-xl text-sm leading-6 text-[#40536d]">Uji chat completions dengan request yang sama seperti integrasi API.</p></header><div className="mx-auto max-w-7xl px-5 py-8 sm:px-8"><div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]"><form onSubmit={submit} className="border border-[#d9e0e8] bg-white p-5 sm:p-6"><div className="grid gap-5"><label className="block text-sm font-medium">API key untuk playground<input required type="password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder="pk_live_..." className="mt-2 min-h-11 w-full border border-[#b9c5d3] px-3 font-mono outline-none focus:border-[#122542] focus:ring-2 focus:ring-[#F0A93B]" /><span className="mt-2 block text-xs text-[#40536d]">Key hanya dipakai dari browser untuk request ini.</span></label><label className="block text-sm font-medium">Pilih model<select required disabled={state !== "ready"} value={model} onChange={(event) => setModel(event.target.value)} className="mt-2 min-h-11 w-full border border-[#b9c5d3] bg-white px-3 outline-none focus:border-[#122542] focus:ring-2 focus:ring-[#F0A93B]">{models.length === 0 && <option value="">{state === "error" ? "Model tidak bisa dimuat" : "Memuat model..."}</option>}{models.map((item) => <option key={item.id} value={item.id}>{item.id}</option>)}</select></label><label className="block text-sm font-medium">System message<textarea value={system} onChange={(event) => setSystem(event.target.value)} rows={3} className="mt-2 w-full border border-[#b9c5d3] px-3 py-2 outline-none focus:border-[#122542] focus:ring-2 focus:ring-[#F0A93B]" /></label><label className="block text-sm font-medium">Pesan user<textarea required value={message} onChange={(event) => setMessage(event.target.value)} rows={5} placeholder="Tulis pesan untuk model..." className="mt-2 w-full border border-[#b9c5d3] px-3 py-2 outline-none focus:border-[#122542] focus:ring-2 focus:ring-[#F0A93B]" /></label><div className="grid gap-4 sm:grid-cols-2"><label className="block text-sm font-medium">Temperature<input type="number" min={0} max={2} step={0.1} value={temperature} onChange={(event) => setTemperature(Number(event.target.value))} className="mt-2 min-h-11 w-full border border-[#b9c5d3] px-3 font-mono outline-none focus:border-[#122542] focus:ring-2 focus:ring-[#F0A93B]" /></label><label className="block text-sm font-medium">Max tokens<input type="number" min={1} max={4096} value={maxTokens} onChange={(event) => setMaxTokens(Number(event.target.value))} className="mt-2 min-h-11 w-full border border-[#b9c5d3] px-3 font-mono outline-none focus:border-[#122542] focus:ring-2 focus:ring-[#F0A93B]" /></label></div><label className="flex min-h-11 items-center gap-3 text-sm"><input type="checkbox" checked={stream} onChange={(event) => setStream(event.target.checked)} className="h-4 w-4 accent-[#122542]" />Streaming response (SSE)</label>{error && <p role="alert" className="border-l-2 border-[#D64545] bg-[#f9e8e8] px-4 py-3 text-sm text-[#8f2929]">{error}</p>}<div className="border-t border-[#d9e0e8] pt-4 text-sm text-[#40536d]">Estimasi input: <span className="font-mono text-[#122542]">{estimatedTokens} token</span>. Biaya aktual tampil dari response upstream jika tersedia.</div><button disabled={submitting || !apiKey || !model} className="min-h-12 bg-[#F0A93B] px-5 font-semibold text-[#122542] hover:bg-[#f7bb5d] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-[#122542]">{submitting ? "Menunggu response..." : "Kirim request"}</button></div></form><section className="border border-[#122542] bg-[#122542] text-white"><div className="flex flex-wrap border-b border-[#30435d]" role="tablist" aria-label="Output playground">{([["response", "Response"], ["curl", "cURL"], ["javascript", "JavaScript"]] as const).map(([value, label]) => <button key={value} role="tab" aria-selected={tab === value} onClick={() => setTab(value)} className={`min-h-12 px-4 text-sm focus-visible:outline-2 focus-visible:outline-[#F0A93B] ${tab === value ? "border-b-2 border-[#F0A93B] text-[#F0A93B]" : "text-[#b7c5d6]"}`}>{label}</button>)}</div><div className="min-h-[28rem] overflow-auto p-5">{tab === "response" && <>{!responseText && !error && <div className="flex min-h-[24rem] items-center justify-center text-center text-sm text-[#b7c5d6]">Response akan muncul di sini setelah request dikirim.</div>}{responseText && <pre className="whitespace-pre-wrap break-words font-mono text-sm leading-6 text-[#dbe4ef]">{responseText}</pre>}</>}{tab === "curl" && <pre className="whitespace-pre-wrap break-words font-mono text-sm leading-6 text-[#dbe4ef]">{curl}</pre>}{tab === "javascript" && <pre className="whitespace-pre-wrap break-words font-mono text-sm leading-6 text-[#dbe4ef]">{javascript}</pre>}</div></section></div></div></div>;
+  return <div className="min-h-screen bg-[#FAFAF9]">
+    <header className="border-b border-[#d9e0e8] bg-white px-5 py-8 sm:px-8"><p className="text-sm font-semibold text-[#D97B2E]">Developer tool</p><h1 className="mt-2 text-3xl font-semibold tracking-[-0.035em]">Playground</h1><p className="mt-3 max-w-xl text-sm text-[#40536d]">Uji chat completions dengan konfigurasi sederhana.</p></header>
+    <div className="mx-auto max-w-5xl px-5 py-8 sm:px-8"><div className="grid gap-6 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+      <form onSubmit={submit} className="min-w-0 border border-[#d9e0e8] bg-white p-5 sm:p-6"><div className="grid gap-5">
+        <label className="block text-sm font-medium">API key<input required type="password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder="pk_live_..." className="mt-2 min-h-11 w-full border border-[#b9c5d3] px-3 font-mono outline-none focus:border-[#122542]" /><span className="mt-2 block text-xs text-[#40536d]">Key hanya dipakai untuk request ini.</span></label>
+        <label className="block text-sm font-medium">Model<select required disabled={state !== "ready"} value={model} onChange={(event) => setModel(event.target.value)} className="mt-2 min-h-11 w-full border border-[#b9c5d3] bg-white px-3 outline-none focus:border-[#122542]"><option value="">{state === "error" ? "Model tidak tersedia" : "Masukkan API key"}</option>{models.map((item) => <option key={item.id} value={item.id}>{item.id}</option>)}</select></label>
+        <label className="block text-sm font-medium">System message<textarea value={system} onChange={(event) => setSystem(event.target.value)} rows={3} className="mt-2 w-full border border-[#b9c5d3] px-3 py-2 outline-none focus:border-[#122542]" /></label>
+        <label className="block text-sm font-medium">Pesan<textarea required value={message} onChange={(event) => setMessage(event.target.value)} rows={7} className="mt-2 w-full resize-y border border-[#b9c5d3] px-3 py-2 outline-none focus:border-[#122542]" /></label>
+        {error && <p role="alert" className="border-l-2 border-[#D64545] bg-[#f9e8e8] px-4 py-3 text-sm text-[#8f2929]">{error}</p>}
+        <button type="submit" disabled={submitting || state !== "ready" || !message.trim()} className="min-h-11 bg-[#F0A93B] px-5 font-semibold text-[#122542] disabled:cursor-not-allowed disabled:opacity-50">{submitting ? "Mengirim..." : "Kirim"}</button>
+      </div></form>
+      <section className="min-w-0 border border-[#d9e0e8] bg-white p-5 sm:p-6"><h2 className="font-semibold">Response</h2><pre className="mt-4 min-h-96 max-w-full overflow-auto whitespace-pre-wrap break-words bg-[#122542] p-4 text-sm text-[#dbe4ef]">{responseText || "Response akan tampil di sini."}</pre></section>
+    </div></div>
+  </div>;
 }

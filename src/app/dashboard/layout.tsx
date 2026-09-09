@@ -9,7 +9,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const { data: { user } } = await supabase.auth.getUser();
 
   return (
-    <div className="min-h-screen bg-[#FAFAF9] text-[#122542] lg:grid lg:grid-cols-[14rem_1fr]">
+    <div className="min-h-screen bg-[#FAFAF9] text-[#122542] lg:grid lg:grid-cols-[16rem_1fr]">
       <DashboardSidebar email={user?.email} />
       <main className="min-w-0 lg:col-start-2">{children}</main>
       <WhatsAppCs />

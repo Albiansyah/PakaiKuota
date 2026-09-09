@@ -22,19 +22,19 @@ export function DashboardSidebar({ email }: { email: string | undefined }) {
   return <>
     <Button variant="outline" size="icon" className="fixed left-4 top-4 z-30 lg:hidden" onClick={() => setMobileOpen(true)} aria-label="Buka menu"><ChevronRight size={18} /></Button>
     {mobileOpen && <button className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Tutup menu" />}
-    <aside className={`border-border bg-card text-foreground ${mobileOpen ? "fixed inset-y-0 left-0 z-50 flex w-72" : "hidden"} lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col lg:border-r`}>
+    <aside className={`border-[#30435d] bg-[#122542] text-white ${mobileOpen ? "fixed inset-y-0 left-0 z-50 flex w-72" : "hidden"} lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col lg:border-r`}>
       <div className="flex items-center justify-between px-5 py-5">
-        <Link href="/" className="text-lg font-semibold">Pakai<span className="text-[var(--accent)]">Kuota</span></Link>
-        <Button variant="ghost" size="icon" className="text-foreground lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Tutup menu"><X size={18} /></Button>
+        <Link href="/" className="text-lg font-semibold">Pakai<span className="text-[#F0A93B]">Kuota</span></Link>
+        <Button variant="ghost" size="icon" className="text-white lg:hidden" onClick={() => setMobileOpen(false)} aria-label="Tutup menu"><X size={18} /></Button>
       </div>
-      <p className="px-5 text-xs text-muted-foreground">Dashboard user</p>
+      <p className="px-5 text-xs text-[#b7c5d6]">Dashboard user</p>
       <nav className="mt-5 space-y-3 overflow-y-auto px-3 pb-5" aria-label="Navigasi dashboard">
         {groups.map((group) => <section key={group.label}>
           <button className="flex w-full items-center justify-between px-3 py-2 text-xs font-semibold text-muted-foreground" onClick={() => toggle(group.label)}>{group.label}{collapsed[group.label] ? <ChevronRight size={14} /> : <ChevronDown size={14} />}</button>
-          {!collapsed[group.label] && <div className="space-y-1">{group.items.map((item) => { const Icon = item.icon; const active = pathname === item.href; return <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)} className={`flex min-h-10 items-center gap-3 rounded-xl px-3 text-sm ${active ? "bg-[var(--accent)] font-semibold text-[var(--background)]" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}><Icon size={16} />{item.label}</Link> })}</div>}
+          {!collapsed[group.label] && <div className="space-y-1">{group.items.map((item) => { const Icon = item.icon; const active = pathname === item.href; return <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)} className={`flex min-h-10 items-center gap-3 rounded-xl px-3 text-sm ${active ? "bg-[#F0A93B] font-semibold text-[#122542]" : "text-[#dbe4ef] hover:bg-[#1d3555] hover:text-white"}`}><Icon size={16} />{item.label}</Link> })}</div>}
         </section>)}
       </nav>
-      <div className="mt-auto hidden border-border p-4 lg:block lg:border-t"><p className="truncate text-xs text-muted-foreground">{email ?? "Akun"}</p><form action="/api/auth/logout" method="post"><button className="mt-3 flex items-center gap-2 text-sm text-[var(--accent)] underline"><LogOut size={14} />Keluar</button></form></div>
+      <div className="mt-auto hidden border-[#30435d] p-4 lg:block lg:border-t"><p className="truncate text-xs text-[#b7c5d6]">{email ?? "Akun"}</p><form action="/api/auth/logout" method="post"><button className="mt-3 flex items-center gap-2 text-sm text-[#F0A93B] underline"><LogOut size={14} />Keluar</button></form></div>
     </aside>
   </>
 }
