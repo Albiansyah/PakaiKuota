@@ -112,7 +112,12 @@ export async function POST(request: Request) {
   }
 
   const config = await createSupabaseAdminClient().from('newapi_config').select('base_url, api_key, is_active').eq('id', 1).maybeSingle();
-  const upstreamUrl = config.data?.is_active === false ? null : config.data?.base_url ?? process.env.UPSTREAM_CHAT_COMPLETIONS_URL;
+  const configuredUrl = config.data?.is_active === false ? null : config.data?.base_url ?? process.env.UPSTREAM_CHAT_COMPLETIONS_URL;
+  const upstreamUrl = configuredUrl
+    ? new URL(configuredUrl).pathname.endsWith('/v1/chat/completions')
+      ? configuredUrl
+      : new URL('/v1/chat/completions', configuredUrl).toString()
+    : null;
   const upstreamKey = config.data?.is_active === false ? null : config.data?.api_key ?? process.env.UPSTREAM_API_KEY;
   if (!upstreamUrl || !upstreamKey) {
     await finalizeRequest({ requestId: authorization.data, status: 'failed' });
