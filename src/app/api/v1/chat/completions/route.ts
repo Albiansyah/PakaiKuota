@@ -164,7 +164,17 @@ export async function POST(request: Request) {
     });
   }
 
-  const payload = await upstream.json().catch(() => null);
+  let payload: unknown;
+  try {
+    payload = await upstream.json();
+  } catch {
+    await finalizeRequest({ requestId: authorization.data, status: 'failed' });
+    return errorResponse('UPSTREAM_ERROR', 'Upstream returned an invalid JSON response', 502);
+  }
+  if (payload === null || typeof payload !== 'object') {
+    await finalizeRequest({ requestId: authorization.data, status: 'failed' });
+    return errorResponse('UPSTREAM_ERROR', 'Upstream returned an empty response', 502);
+  }
   const usage = extractUsage(payload);
   const actualCostUsd = estimateCostUsd(usage.input || estimatedInput, usage.output || maxTokens, model);
   const finalized = await finalizeRequest({
