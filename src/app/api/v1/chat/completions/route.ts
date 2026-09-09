@@ -120,6 +120,9 @@ export async function POST(request: Request) {
   }
 
   const upstreamBody = { ...body, model: model.name ?? body.model };
+  console.log('[DEBUG] upstream model:', upstreamBody.model);
+  console.log('[DEBUG] upstream body:', JSON.stringify(upstreamBody));
+  console.log('[DEBUG] upstream URL:', upstreamUrl);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 120_000);
   let upstream: Response;
@@ -165,9 +168,12 @@ export async function POST(request: Request) {
     });
   }
 
+  const rawText = await upstream.text();
+  console.log('[DEBUG] upstream status:', upstream.status);
+  console.log('[DEBUG] upstream raw response:', rawText.slice(0, 2000));
   let payload: unknown;
   try {
-    payload = await upstream.json();
+    payload = JSON.parse(rawText);
   } catch {
     await finalizeRequest({ requestId: authorization.data, status: 'failed' });
     return errorResponse('UPSTREAM_ERROR', 'Upstream returned an invalid JSON response', 502);
