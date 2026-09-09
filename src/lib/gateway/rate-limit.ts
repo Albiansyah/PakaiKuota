@@ -1,14 +1,15 @@
 import 'server-only';
 
-import Redis from 'ioredis';
+import { Redis } from '@upstash/redis';
 
 let redis: Redis | undefined;
 
 function getRedis() {
   if (!redis) {
-    const url = process.env.REDIS_URL;
-    if (!url) throw new Error('REDIS_URL is not configured');
-    redis = new Redis(url, { maxRetriesPerRequest: 1, enableOfflineQueue: false });
+    const url = process.env.UPSTASH_REDIS_REST_URL;
+    const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+    if (!url || !token) throw new Error('Upstash Redis environment is not configured');
+    redis = new Redis({ url, token });
   }
   return redis;
 }
