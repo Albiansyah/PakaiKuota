@@ -11,14 +11,22 @@ export async function POST() {
   const response = await fetch(new URL('/v1/models', config.base_url), { headers: { Authorization: `Bearer ${config.api_key}` }, cache: 'no-store' })
   if (!response.ok) return NextResponse.json({ error: 'upstream_fetch_failed' }, { status: 502 })
   const payload = await response.json() as { data?: Array<{ id?: string; pricing?: { prompt?: string; completion?: string } }> }
+  const excluded = new Set(['openrouter/auto', 'openrouter/auto-beta', 'openrouter/bodybuilder', 'openrouter/fusion', 'openrouter/pareto-code'])
   let synced = 0
   for (const item of payload.data ?? []) {
-    if (!item.id) continue
-    const input = Math.max(0, Number(item.pricing?.prompt ?? 0) * 1000)
-    const output = Math.max(0, Number(item.pricing?.completion ?? item.pricing?.prompt ?? 0) * 1000)
+    if (!item.id || excluded.has(item.id)) continue
+    const prompt = Number(item.pricing?.prompt)
+    const completion = Number(item.pricing?.completion)
+    if (!Number.isFinite(prompt) || prompt <= 0 || !Number.isFinite(completion) || completion <= 0) continue
+    const input = prompt * 1000
+    const output = completion * 1000
     const tier = input < 0.01 ? 'standard' : input < 0.1 ? 'premium' : 'ultra'
-    const { error } = await db.from('models').upsert({ slug: item.id, name: item.id, input_price_per_1k: input, output_price_per_1k: output, markup_percent: Number(config.markup_percent ?? 0), tier, enabled: true }, { onConflict: 'slug' })
-    if (!error) synced++
+    const existing = await db.from('models').select('id').eq('slug', item.id).maybeSingle()
+    const values = { name: item.id, input_price_per_1k: input, output_price_per_1k: output, markup_percent: Number(config.markup_percent ?? 0), tier }
+    const result = existing.data
+      ? await db.from('models').update(values).eq('slug', item.id)
+      : await db.from('models').insert({ ...values, slug: item.id, enabled: false })
+    if (!result.error) synced++
   }
   return NextResponse.json({ synced })
 }

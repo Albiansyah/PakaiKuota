@@ -1,21 +1,67 @@
-Sudah dikonfirmasi via `git log --oneline -5`: commit b55f048 adalah HEAD
-lokal DAN origin/main DAN commit yang sama persis dibuild Vercel. Tidak
-ada perbedaan source tree, tidak ada monorepo/root directory issue, tidak
-ada branch mismatch — semua identik.
-
-Jadi hipotesis "source berbeda" itu SALAH, hentikan investigasi ke arah
-itu. Diagnosis awal sebelum ini (missing dependencies + naming mismatch
-createClient/createSupabaseServerClient) yang BENAR dan perlu diperbaiki
-sekarang — kemungkinan besar package.json belum ter-update dengan benar
-saat commit "Merge remote main with local implementation" (b8c51de),
-menyebabkan dependency baru (dropdown-menu, label, slot, switch, tabs,
-class-variance-authority, clsx, lucide-react, tailwind-merge) tidak
-tercatat meski filenya sudah ada di commit.
-
-Lanjutkan fix sesuai rencana sebelumnya:
-1. npm install untuk semua package yang hilang, verifikasi package.json
-   ter-update dengan benar
-2. Tambahkan alias export di src/lib/supabase/server.ts:
-   export { createSupabaseServerClient as createClient }
-3. Jalankan npm run build LOKAL, pastikan sukses tanpa error
-4. Baru commit & push setelah build lokal terbukti hijau
+20:47:34.838 Running build in Washington, D.C., USA (East) – iad1
+20:47:34.839 Build machine configuration: 2 cores, 8 GB
+20:47:34.972 Cloning github.com/Albiansyah/PakaiKuota (Branch: main, Commit: 2b4bb44)
+20:47:34.973 Previous build caches not available.
+20:47:36.372 Cloning completed: 1.400s
+20:47:36.760 Running "vercel build"
+20:47:36.781 Vercel CLI 59.11.7
+20:47:36.984 Installing dependencies...
+20:47:43.625 npm warn deprecated eslint@9.39.5: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+20:47:49.110 
+20:47:49.111 added 467 packages in 12s
+20:47:49.111 
+20:47:49.111 164 packages are looking for funding
+20:47:49.112   run `npm fund` for details
+20:47:49.113 npm warn allow-scripts 2 packages have install scripts not yet covered by allowScripts:
+20:47:49.114 npm warn allow-scripts   esbuild@0.21.5 (postinstall: node install.js)
+20:47:49.114 npm warn allow-scripts   unrs-resolver@1.12.2 (postinstall: node postinstall.js)
+20:47:49.114 npm warn allow-scripts
+20:47:49.115 npm warn allow-scripts Run `npm approve-scripts --allow-scripts-pending` to review, or `npm approve-scripts <pkg>` to allow.
+20:47:49.153 Detected Next.js version: 16.3.4
+20:47:49.161 Running "npm run build"
+20:47:49.716 
+20:47:49.716 > pakaikuota@0.1.0 build
+20:47:49.717 > next build
+20:47:49.717 
+20:47:50.101 ▲ Next.js 16.3.4 (Turbopack)
+20:47:50.197   Applying modifyConfig from Vercel
+20:47:50.199 ✓ Running next.config.ts took 102ms
+20:47:50.204 Attention: Next.js now collects completely anonymous telemetry regarding usage.
+20:47:50.205 This information is used to shape Next.js' roadmap and prioritize features.
+20:47:50.206 You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+20:47:50.206 https://nextjs.org/telemetry
+20:47:50.206 
+20:47:50.221 
+20:47:50.230 ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead.
+20:47:50.230 
+20:47:50.231   To migrate automatically, run:
+20:47:50.231   npx @next/codemod@canary middleware-to-proxy .
+20:47:50.231 
+20:47:50.231   Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+20:47:50.268   Creating an optimized production build ...
+20:48:03.442 ✓ Compiled successfully in 12.4s
+20:48:03.455   Running TypeScript ...
+20:48:11.276   Finished TypeScript in 7.8s ...
+20:48:11.279   Collecting page data using 1 worker ...
+20:48:11.845 Error: Failed to collect configuration for /api/account/delete-request
+20:48:11.845     at ignore-listed frames {
+20:48:11.845   [cause]: Error: Missing required environment variable: NEXT_PUBLIC_SUPABASE_URL
+20:48:11.845       at t (src/lib/env.ts:12:11)
+20:48:11.845       at module evaluation (src/lib/env.ts:18:16)
+20:48:11.845       at module evaluation (src/lib/supabase/server.ts:3:1)
+20:48:11.845       at module evaluation (src/app/api/account/delete-request/route.ts:2:1)
+20:48:11.846     10 | function required(name: string, value: string | undefined): string {
+20:48:11.846     11 |   if (!value || value.length === 0) {
+20:48:11.846   > 12 |     throw new Error(`Missing required environment variable: ${name}`);
+20:48:11.846        |           ^
+20:48:11.846     13 |   }
+20:48:11.846     14 |   return value;
+20:48:11.846     15 | }
+20:48:11.846 }
+20:48:12.350 
+20:48:12.350 > Build error occurred
+20:48:12.352 Error: Failed to collect page data for /api/account/delete-request
+20:48:12.352     at ignore-listed frames {
+20:48:12.352   type: 'Error'
+20:48:12.353 }
+20:48:12.410 Error: Command "npm run build" exited with 1
