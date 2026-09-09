@@ -36,13 +36,10 @@ export default function AdminRefundsPage() {
     if (!user) { router.push("/login"); return }
     ;(async () => {
       try {
-        const res = await fetch("/api/admin/transactions")
+        const res = await fetch("/api/admin/refunds")
         if (!res.ok) throw new Error("Unauthorized")
         const data = await res.json()
-        const refundRequests = (data.transactions ?? []).filter(
-          (t: { status: string }) => t.status === "refund_requested"
-        )
-        setRefunds(refundRequests)
+        setRefunds(data.refunds ?? [])
       } catch (err) {
         console.error("Failed to fetch refunds:", err)
       } finally {
@@ -59,14 +56,9 @@ export default function AdminRefundsPage() {
     setProcessing(id)
 
     try {
-      await fetch("/api/admin/transactions", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          transactionId: id,
-          action: action === "refund" ? "refund" : "reject_refund",
-        }),
-      })
+      if (action === "reject") return
+      const response = await fetch(`/api/admin/refunds/${id}/approve`, { method: "POST" })
+      if (!response.ok) throw new Error("Refund gagal diproses")
       setRefunds((prev) => prev.filter((r) => r.id !== id))
     } catch (err) {
       console.error("Failed to process refund:", err)

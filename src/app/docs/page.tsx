@@ -20,7 +20,7 @@ import {
 import { cn } from "@/lib/cn"
 
 const SNIPPETS = {
-  curl: `curl https://api.pakaikuota.id/v1/chat/completions \\
+  curl: `curl https://pakai-kuota.vercel.app/api/v1/chat/completions \\
   -H "Authorization: Bearer $PK_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -33,7 +33,7 @@ const SNIPPETS = {
 
   python: `import requests
 
-url = "https://api.pakaikuota.id/v1/chat/completions"
+url = "https://pakai-kuota.vercel.app/api/v1/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -48,14 +48,14 @@ data = {
 response = requests.post(url, headers=headers, json=data)
 print(response.json())`,
 
-  node: `const response = await fetch("https://api.pakaikuota.id/v1/chat/completions", {
+  node: `const response = await fetch("https://pakai-kuota.vercel.app/api/v1/chat/completions", {
   method: "POST",
   headers: {
     "Authorization": \`Bearer \${process.env.PK_KEY}\`,
     "Content-Type": "application/json"
   },
   body: JSON.stringify({
-    model: "gpt-4o-mini",
+    model: "nvidia-nemotron-3-ultra-550b-a55bfree",
     messages: [{ role: "user", content: "Halo!" }]
   })
 });
@@ -73,7 +73,7 @@ import (
 )
 
 func main() {
-	url := "https://api.pakaikuota.id/v1/chat/completions"
+	url := "https://pakai-kuota.vercel.app/api/v1/chat/completions"
 
 	payload := map[string]interface{}{
 		"model": "gpt-4o-mini",
@@ -96,7 +96,7 @@ func main() {
 
   php: `<?php
 
-$url = "https://api.pakaikuota.id/v1/chat/completions";
+$url = "https://pakai-kuota.vercel.app/api/v1/chat/completions";
 
 $data = [
     "model" => "gpt-4o-mini",
@@ -123,10 +123,7 @@ print_r($result);`,
 }
 
 const MODELS = [
-  { name: "gpt-4o", description: "Model flagship OpenAI", tier: "Menengah", price: "Rp 15.000" },
-  { name: "gpt-4o-mini", description: "Model kecil, cepat, murah", tier: "Murah", price: "Rp 2.500" },
-  { name: "claude-3-5-sonnet", description: "Model Claude terbaru", tier: "Menengah", price: "Rp 18.000" },
-  { name: "gemini-1.5-flash", description: "Model cepat Google", tier: "Murah", price: "Rp 1.500" },
+  { name: "nvidia-nemotron-3-ultra-550b-a55bfree", description: "Model gratis yang sudah terhubung ke gateway", tier: "Gratis", price: "Rp 0" },
 ]
 
 const STEPS = [
@@ -192,6 +189,60 @@ export default function DocsPage() {
               </div>
             ))}
           </Grid>
+        </CardContent>
+      </Card>
+
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="text-lg">Setup API</CardTitle>
+          <CardDescription>Konfigurasi yang perlu disiapkan sebelum request pertama.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm leading-6">
+          <ol className="list-decimal space-y-2 pl-5">
+            <li>Daftar atau masuk ke akun PakaiKuota.</li>
+            <li>Buka Dashboard → API Keys, buat key baru, lalu simpan plaintext key. Key hanya ditampilkan saat dibuat.</li>
+            <li>Pastikan saldo tersedia. Request pay-per-use akan memotong saldo Rupiah setelah provider berhasil merespons.</li>
+            <li>Gunakan slug model yang tersedia. Model gratis saat ini: <code>nvidia-nemotron-3-ultra-550b-a55bfree</code>.</li>
+          </ol>
+          <div className="rounded-lg border border-[var(--color-border)] p-4">
+            <p className="font-semibold">Endpoint</p>
+            <code>POST /api/v1/chat/completions</code>
+            <p className="mt-2">Production: <code>https://pakai-kuota.vercel.app/api/v1/chat/completions</code></p>
+          </div>
+          <div className="rounded-lg border border-[var(--color-border)] p-4">
+            <p className="font-semibold">Daftar model</p>
+            <p><code>GET /api/v1/models</code> dengan header API key. Hanya model yang diaktifkan admin yang ditampilkan.</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="text-lg">Format Request</CardTitle>
+          <CardDescription>Parameter yang didukung endpoint chat completion.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm leading-6">
+          <ul className="list-disc space-y-2 pl-5">
+            <li><code>model</code> wajib: slug dari daftar model.</li>
+            <li><code>messages</code> wajib: array berisi <code>role</code> dan <code>content</code>.</li>
+            <li><code>max_tokens</code> opsional: integer 1–4096. Gunakan nilai kecil untuk membatasi biaya.</li>
+            <li><code>stream</code>, <code>temperature</code>, dan <code>top_p</code> opsional.</li>
+            <li>Simpan API key di environment variable server, jangan di frontend publik atau repository.</li>
+          </ul>
+          <p>Billing memakai harga model, markup, kurs USD/IDR, dan token aktual dari provider jika tersedia. Request gagal tidak seharusnya memotong saldo.</p>
+        </CardContent>
+      </Card>
+
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="text-lg">Error Umum</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm leading-6">
+          <p><code>401 INVALID_API_KEY</code>: API key salah atau sudah dicabut.</p>
+          <p><code>403 MODEL_DISABLED</code>: model belum diaktifkan admin.</p>
+          <p><code>404 MODEL_NOT_FOUND</code>: gunakan slug yang dikembalikan endpoint daftar model.</p>
+          <p><code>429 RATE_LIMITED</code>: batas request tercapai.</p>
+          <p><code>402/502 UPSTREAM_ERROR</code>: provider tidak memiliki channel, kredit, atau mengembalikan error.</p>
         </CardContent>
       </Card>
 

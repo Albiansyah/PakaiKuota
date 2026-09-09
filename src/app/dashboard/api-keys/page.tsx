@@ -30,7 +30,7 @@ type ApiKey = {
   id: string
   name: string
   key_prefix: string
-  is_active: boolean
+  revoked_at: string | null
   created_at: string
 }
 
@@ -80,6 +80,12 @@ export default function ApiKeysPage() {
       alert(data.error)
     }
     setLoading(false)
+  }
+
+  const deleteRevokedKey = async (id: string) => {
+    if (!confirm("Hapus key yang sudah dicabut secara permanen?")) return
+    const res = await fetch(`/api/keys/${id}?permanent=true`, { method: "DELETE" })
+    if (res.ok) setKeys((current) => current.filter((key) => key.id !== id))
   }
 
   const copyToClipboard = async (text: string) => {
@@ -190,6 +196,7 @@ export default function ApiKeysPage() {
                   <TableHead>{t("apikeys.prefix")}</TableHead>
                   <TableHead>{t("apikeys.active")}</TableHead>
                   <TableHead>{t("apikeys.created")}</TableHead>
+                  <TableHead>Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -201,18 +208,19 @@ export default function ApiKeysPage() {
                     </TableCell>
                     <TableCell>
                       <Badge
-                        variant={key.is_active ? "success" : "secondary"}
-                      >
-                        {key.is_active ? t("common.active") : t("common.inactive")}
+variant={key.revoked_at ? "secondary" : "success"}
+                       >
+                         {key.revoked_at ? "Dicabut" : t("common.active")}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-[var(--color-muted-foreground)]">
-                      {new Date(key.created_at).toLocaleDateString("id-ID", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </TableCell>
+<TableCell className="text-[var(--color-muted-foreground)]">
+                       {new Date(key.created_at).toLocaleDateString("id-ID", {
+                         day: "numeric",
+                         month: "short",
+                         year: "numeric",
+                       })}
+                     </TableCell>
+                     <TableCell>{key.revoked_at && <Button variant="outline" size="sm" onClick={() => deleteRevokedKey(key.id)}>Hapus</Button>}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
