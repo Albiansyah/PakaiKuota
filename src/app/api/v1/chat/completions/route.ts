@@ -147,7 +147,7 @@ export async function POST(request: Request) {
 
   if (!upstream.ok || !upstream.body) {
     await finalizeRequest({ requestId: authorization.data, status: 'failed' });
-    return errorResponse('UPSTREAM_ERROR', 'Upstream request failed', 502);
+    return errorResponse('UPSTREAM_ERROR', `Upstream request failed (${upstream.status})`, 502);
   }
 
   if (body.stream) {
