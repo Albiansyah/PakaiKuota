@@ -28,11 +28,12 @@ import { getModelTierLabel } from "@/lib/model-tier-labels"
 type Model = {
   id: string
   name: string
-  provider: string
-  tier: string
-  upstream_price_per_token: number
-  markup_price_per_token: number
-  is_active: boolean
+  slug: string
+  tier: "standard" | "premium" | "ultra"
+  input_price_per_1k: number
+  output_price_per_1k: number
+  markup_percent: number
+  enabled: boolean
 }
 
 const numClass = "text-right font-mono tabular-nums"
@@ -47,6 +48,7 @@ export default function AdminModelsPage() {
   const [editValue, setEditValue] = useState("")
   const [saving, setSaving] = useState<string | null>(null)
   const [rate, setRate] = useState(15000)
+  const [connection, setConnection] = useState<{ last_test_status?: "success" | "failed" | null; last_test_response_time_ms?: number | null; last_tested_at?: string | null }>({})
 
   useEffect(() => {
     if (!user) { router.push("/login"); return }
@@ -56,6 +58,7 @@ export default function AdminModelsPage() {
         if (!res.ok) throw new Error("Unauthorized")
         const data = await res.json()
         setModels(data.models ?? [])
+        setConnection(data.connection ?? {})
       } catch (err) {
         console.error("Failed to fetch models:", err)
       }
@@ -82,7 +85,7 @@ export default function AdminModelsPage() {
 
   const startEdit = (model: Model) => {
     setEditingId(model.id)
-    setEditValue(model.markup_price_per_token.toString())
+    setEditValue(model.markup_percent.toString())
   }
 
   const saveMarkup = async (model: Model) => {
@@ -93,9 +96,9 @@ export default function AdminModelsPage() {
       await fetch("/api/admin/models", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ modelId: model.id, markup_price_per_token: newMarkup }),
+        body: JSON.stringify({ modelId: model.id, markup_percent: newMarkup }),
       })
-      setModels((prev) => prev.map((m) => (m.id === model.id ? { ...m, markup_price_per_token: newMarkup } : m)))
+      setModels((prev) => prev.map((m) => (m.id === model.id ? { ...m, markup_percent: newMarkup } : m)))
       setEditingId(null)
     } catch (err) {
       console.error("Failed to save markup:", err)
@@ -108,9 +111,9 @@ export default function AdminModelsPage() {
       await fetch("/api/admin/models", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ modelId: model.id, is_active: !model.is_active }),
+        body: JSON.stringify({ modelId: model.id, enabled: !model.enabled }),
       })
-      setModels((prev) => prev.map((m) => (m.id === model.id ? { ...m, is_active: !m.is_active } : m)))
+      setModels((prev) => prev.map((m) => (m.id === model.id ? { ...m, enabled: !m.enabled } : m)))
     } catch (err) {
       console.error("Failed to toggle model:", err)
     }
@@ -121,7 +124,7 @@ export default function AdminModelsPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Cpu className="h-8 w-8 text-[var(--accent)]" />
-          <h1 className="text-3xl font-bold">Manajemen Model</h1>
+          <div><h1 className="text-3xl font-bold">Manajemen Model</h1><div className="mt-2 text-sm">{connection.last_test_status === "success" ? <Badge className="border-[var(--success)]/30 bg-[var(--success)]/10 text-[var(--success)]">Terhubung ke NewAPI{connection.last_test_response_time_ms ? ` · ${connection.last_test_response_time_ms} ms` : ""}</Badge> : <Badge variant="outline">Belum terhubung</Badge>}</div></div>
         </div>
         <Button onClick={handleSync} disabled={syncing}>
           {syncing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Syncing...</> : <><RefreshCw className="mr-2 h-4 w-4" />Sync NewAPI</>}
@@ -146,7 +149,7 @@ export default function AdminModelsPage() {
                   <TableHead>Model</TableHead>
                   <TableHead>Provider</TableHead>
                   <TableHead>Tier</TableHead>
-                  <TableHead className="text-right">Upstream</TableHead>
+                  <TableHead className="text-right">Input / 1K</TableHead>
                   <TableHead className="text-right">Markup</TableHead>
                   <TableHead className="text-right">Margin</TableHead>
                   <TableHead className="text-center">Status</TableHead>
@@ -155,16 +158,14 @@ export default function AdminModelsPage() {
               </TableHeader>
               <TableBody>
                 {models.map((m) => {
-                  const margin = m.markup_price_per_token > 0
-                    ? ((m.markup_price_per_token - m.upstream_price_per_token) / m.markup_price_per_token) * 100
-                    : 0
+                  const margin = m.markup_percent
                   const isEditing = editingId === m.id
                   const tierLabel = getModelTierLabel(m.tier)
 
                   return (
                     <TableRow key={m.id}>
                       <TableCell className="font-mono text-sm font-medium">{m.name}</TableCell>
-                      <TableCell className="text-sm">{m.provider}</TableCell>
+                      <TableCell className="text-sm">NewAPI</TableCell>
                       <TableCell>
                         {tierLabel ? (
                           <Badge variant={tierLabel === "Premium" ? "default" : "secondary"}>{tierLabel}</Badge>
@@ -172,7 +173,7 @@ export default function AdminModelsPage() {
                           <Badge variant="outline">-</Badge>
                         )}
                       </TableCell>
-                      <TableCell className={numClass}>{ (m.upstream_price_per_token * rate).toFixed(2) }</TableCell>
+                      <TableCell className={numClass}>{ (m.input_price_per_1k * rate).toFixed(2) }</TableCell>
                       <TableCell className={numClass}>
                         {isEditing ? (
                           <div className="flex items-center justify-end gap-1">
@@ -193,7 +194,7 @@ export default function AdminModelsPage() {
                           </div>
                         ) : (
                           <span className="cursor-pointer hover:text-[var(--accent)]" onClick={() => startEdit(m)}>
-                            {(m.markup_price_per_token * rate).toFixed(2)}
+                            {m.markup_percent.toFixed(2)}%
                           </span>
                         )}
                       </TableCell>
@@ -201,7 +202,7 @@ export default function AdminModelsPage() {
                         {margin.toFixed(1)}%
                       </TableCell>
                       <TableCell className="text-center">
-                        {m.is_active ? (
+                        {m.enabled ? (
                           <Badge className="border-emerald-500/20 bg-emerald-500/15 text-emerald-500">Aktif</Badge>
                         ) : (
                           <Badge variant="outline">Nonaktif</Badge>
@@ -219,7 +220,7 @@ export default function AdminModelsPage() {
                               <Pencil /> Edit Markup
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            {m.is_active ? (
+{m.enabled ? (
                               <DropdownMenuItem onClick={() => toggleActive(m)}>
                                 <PowerOff /> Nonaktifkan
                               </DropdownMenuItem>

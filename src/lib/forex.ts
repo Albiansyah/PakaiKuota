@@ -13,7 +13,9 @@ export async function getUsdIdrRate(): Promise<number> {
     .select('value')
     .eq('key', 'usd_idr_rate')
     .single())
-  const value = data ? Number(data.value) : 15000
+  const fallback = Number(process.env.FOREX_FALLBACK_RATE ?? '15000')
+  const value = data ? Number(data.value) : fallback
+  if (!data) console.warn(`Forex rate unavailable; using FOREX_FALLBACK_RATE=${fallback}`)
   cachedRate = { value, ts: Date.now() }
   return value
 }

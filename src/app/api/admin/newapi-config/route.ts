@@ -36,15 +36,21 @@ export async function POST(request: Request) {
   const guard = await requireRole(['super_admin'])
   if (!guard.ok) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   const body = await request.json().catch(() => null) as { base_url?: string; api_key?: string } | null
-  if (!body?.base_url || !body.api_key || !/^https?:\/\//.test(body.base_url)) return NextResponse.json({ error: 'invalid_config' }, { status: 400 })
+  if (!body?.base_url || !body.api_key || body.api_key.trim().length < 8 || /^(placeholder|your[-_ ]?api[-_ ]?key|xxx+)$/i.test(body.api_key.trim()) || !/^https?:\/\//.test(body.base_url)) return NextResponse.json({ error: 'invalid_config' }, { status: 400 })
+  const started = Date.now()
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 10000)
   try {
     const response = await fetch(new URL('/api/status', body.base_url), { headers: { Authorization: `Bearer ${body.api_key}` }, signal: controller.signal, cache: 'no-store' })
-    if (!response.ok) return NextResponse.json({ error: 'connection_failed', status: response.status }, { status: 502 })
-    return NextResponse.json({ ok: true })
+    const responseTimeMs = Date.now() - started
+    const status = response.ok ? 'success' : 'failed'
+    await createSupabaseAdminClient().from('newapi_config').update({ last_test_status: status, last_test_response_time_ms: responseTimeMs, last_test_error: response.ok ? null : `HTTP ${response.status}`, last_tested_at: new Date().toISOString() }).eq('id', 1)
+    if (!response.ok) return NextResponse.json({ error: 'connection_failed', response_time_ms: responseTimeMs }, { status: 502 })
+    return NextResponse.json({ ok: true, response_time_ms: responseTimeMs })
   } catch {
-    return NextResponse.json({ error: 'connection_unavailable' }, { status: 502 })
+    const responseTimeMs = Date.now() - started
+    await createSupabaseAdminClient().from('newapi_config').update({ last_test_status: 'failed', last_test_response_time_ms: responseTimeMs, last_test_error: 'connection_unavailable', last_tested_at: new Date().toISOString() }).eq('id', 1)
+    return NextResponse.json({ error: 'connection_unavailable', response_time_ms: responseTimeMs }, { status: 502 })
   } finally {
     clearTimeout(timer)
   }

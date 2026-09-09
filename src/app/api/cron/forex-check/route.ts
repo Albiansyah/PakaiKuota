@@ -69,11 +69,11 @@ export async function GET(request: Request) {
   const supabase = createSupabaseAdminClient();
   const { error } = await supabase
     .from('forex_history')
-    .insert({ usd_to_idr: rate });
+    .insert({ base: 'USD', quote: 'IDR', rate });
 
   if (error) {
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, usd_to_idr: rate }, { status: 200 });
+  return NextResponse.json({ ok: true, rate }, { status: 200 });
 }

@@ -43,13 +43,13 @@ export default function PlaygroundPage() {
     setError("")
 
     try {
-      const res = await fetch("/api/proxy", {
+      const res = await fetch("/api/playground", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model,
-          prompt_tokens: prompt.length / 4,
-          completion_tokens: 50,
+          messages: [{ role: "user", content: prompt }],
+          max_tokens: 50,
         }),
       })
       const data = await res.json()

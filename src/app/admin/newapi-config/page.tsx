@@ -32,6 +32,7 @@ export default function NewAPIConfigPage() {
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<Partial<NewAPIConfig>>({})
   const [saved, setSaved] = useState(false)
+  const [testResult, setTestResult] = useState<{ status: "success" | "failed"; responseTimeMs?: number; message?: string } | null>(null)
 
   useEffect(() => {
     ;(async () => {
@@ -54,11 +55,17 @@ export default function NewAPIConfigPage() {
   }
 
   const testConnection = async () => {
+    const key = form.api_key?.trim() ?? ""
+    if (!form.base_url || key.length < 8 || /^(placeholder|your[-_ ]?api[-_ ]?key|xxx+)$/i.test(key)) { setTestResult({ status: "failed", message: "API Key belum diisi dengan benar" }); toast.error("API Key belum diisi dengan benar"); return }
     setTesting(true)
-    const response = await fetch("/api/admin/newapi-config", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ base_url: form.base_url, api_key: form.api_key }) })
-    setTesting(false)
-    if (response.ok) toast.success("Koneksi NewAPI berhasil")
-    else toast.error("Koneksi NewAPI gagal")
+    try {
+      const response = await fetch("/api/admin/newapi-config", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ base_url: form.base_url, api_key: key }) })
+      const result = await response.json() as { response_time_ms?: number; error?: string }
+      const next = { status: response.ok ? "success" as const : "failed" as const, responseTimeMs: result.response_time_ms, message: result.error }
+      setTestResult(next)
+      if (response.ok) toast.success(`Koneksi berhasil (${result.response_time_ms} ms)`)
+      else toast.error(`${result.error ?? "Koneksi gagal"}${result.response_time_ms ? ` (${result.response_time_ms} ms)` : ""}`)
+    } catch { setTestResult({ status: "failed", message: "connection_unavailable" }); toast.error("Koneksi tidak tersedia") } finally { setTesting(false) }
   }
 
   const save = async () => {
@@ -149,6 +156,7 @@ export default function NewAPIConfigPage() {
       </Card>
 
       <Separator />
+      {testResult && <div className={`rounded-lg border px-4 py-3 text-sm ${testResult.status === "success" ? "border-[var(--success)]/30 bg-[var(--success)]/10 text-[var(--success)]" : "border-[var(--destructive)]/30 bg-[var(--destructive)]/10 text-[var(--destructive)]"}`}><strong>{testResult.status === "success" ? "Terhubung" : "Gagal terhubung"}</strong>{testResult.responseTimeMs ? ` · ${testResult.responseTimeMs} ms` : ""}{testResult.message ? ` · ${testResult.message}` : ""}</div>}
       <div className="flex items-center gap-4">
         <Button variant="outline" onClick={testConnection} disabled={testing || !form.base_url || !form.api_key} size="lg">{testing ? "Menguji..." : "Test koneksi"}</Button>
         <Button onClick={save} disabled={saving} size="lg">{saving ? "Menyimpan..." : "Simpan Konfigurasi"}</Button>

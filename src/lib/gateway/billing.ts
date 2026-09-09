@@ -23,11 +23,13 @@ export async function getGatewayModel(model: string): Promise<GatewayModel | nul
 export async function getLatestForexRate(): Promise<number | null> {
   const { data } = await createSupabaseAdminClient()
     .from('forex_history')
-    .select('usd_to_idr')
+    .select('rate')
+    .eq('base', 'USD')
+    .eq('quote', 'IDR')
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
-  return typeof data?.usd_to_idr === 'number' ? data.usd_to_idr : null;
+  return typeof data?.rate === 'number' ? data.rate : null;
 }
 
 export async function authorizeRequest(args: {
