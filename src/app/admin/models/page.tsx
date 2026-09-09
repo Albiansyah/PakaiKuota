@@ -117,8 +117,8 @@ export default function AdminModelsPage() {
   }
 
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
+    <div className="mx-auto max-w-5xl space-y-8 px-5 py-8 sm:px-8">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Cpu className="h-8 w-8 text-[var(--accent)]" />
           <h1 className="text-3xl font-bold">Manajemen Model</h1>

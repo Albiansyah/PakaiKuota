@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     .select('*')
     .eq('id', transactionId)
     .eq('user_id', user.id)
-    .single() as any)
+    .single())
 
   if (!txn || txn.status !== 'success') {
     return NextResponse.json({ error: 'Invalid transaction' }, { status: 400 })
@@ -24,6 +24,6 @@ export async function POST(request: Request) {
     amount: txn.amount_rupiah,
     reason,
     status: 'pending',
-  }) as any)
+  }))
   return NextResponse.json({ ok: true })
 }

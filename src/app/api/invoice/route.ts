@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     .select('*')
     .eq('id', transactionId)
     .eq('user_id', user.id)
-    .single() as any)
+    .single())
   if (!txn) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const subtotal = txn.amount_rupiah

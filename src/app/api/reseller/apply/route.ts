@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     business_phone,
     npwp: npwp || null,
     status: 'pending',
-  }) as any)
-  await (supabase.from('users').update({ business_name, business_phone, npwp: npwp || null }).eq('id', user.id) as any)
+  }))
+  await (supabase.from('users').update({ business_name, business_phone, npwp: npwp || null }).eq('id', user.id))
   return NextResponse.json({ ok: true })
 }

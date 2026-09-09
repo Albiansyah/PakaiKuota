@@ -36,7 +36,7 @@ export default function NewAPIConfigPage() {
   useEffect(() => {
     ;(async () => {
       try {
-        const { data, error } = await (supabase as any).from("newapi_config").select("*").single()
+        const { data, error } = await (supabase).from("newapi_config").select("*").single()
         if (error) throw error
         setForm(data as NewAPIConfig)
       } catch {
@@ -80,7 +80,7 @@ export default function NewAPIConfigPage() {
   if (loading) return <div className="flex items-center justify-center py-8">Loading...</div>
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-5xl space-y-8 px-5 py-8 sm:px-8">
       <Card>
         <CardHeader>
           <CardTitle>Endpoint & Model</CardTitle>

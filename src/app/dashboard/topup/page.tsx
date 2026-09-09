@@ -27,8 +27,8 @@ export default function TopupPage() {
 
   useEffect(() => {
     let active = true;
-    loadTransactions().catch(() => { if (active) setState("error"); });
-    return () => { active = false; };
+    const timer = setTimeout(() => { loadTransactions().catch(() => { if (active) setState("error"); }); }, 0);
+    return () => { active = false; clearTimeout(timer); };
   }, []);
 
   async function submit(event: FormEvent) {

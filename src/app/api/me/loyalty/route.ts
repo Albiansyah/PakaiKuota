@@ -14,7 +14,7 @@ export async function GET() {
     .from("users")
     .select("loyalty_tier, total_purchased")
     .eq("id", user.id)
-    .single() as any)
+    .single())
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
@@ -25,7 +25,7 @@ export async function GET() {
     .from("loyalty_rules")
     .select("*")
     .eq("tier", userData?.loyalty_tier || "bronze")
-    .single() as any)
+    .single())
 
   return NextResponse.json({
     tier: userData?.loyalty_tier || "bronze",

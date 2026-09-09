@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     status: "pending",
     payment_method: "qris",
     expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
-  }) as any)
+  }))
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
   const { error: updError } = await (supabase
     .from("transactions")
     .update({ pakasir_tx_id: pakasirTxId })
-    .eq("order_id", orderId) as any)
+    .eq("order_id", orderId))
 
   if (updError) return NextResponse.json({ error: updError.message }, { status: 500 })
 

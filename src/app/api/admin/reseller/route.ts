@@ -10,7 +10,7 @@ export async function GET() {
   const { data } = await (supabase
     .from('reseller_applications')
     .select('*')
-    .eq('status', 'pending') as any)
+    .eq('status', 'pending'))
   return NextResponse.json({ applications: data ?? [] })
 }
 
@@ -23,6 +23,6 @@ export async function PATCH(request: Request) {
   await (supabase
     .from('reseller_applications')
     .update({ status: decision, decided_at: new Date().toISOString() })
-    .eq('id', id) as any)
+    .eq('id', id))
   return NextResponse.json({ ok: true })
 }

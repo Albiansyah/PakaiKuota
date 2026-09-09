@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 
     // Get package with loyalty pricing
     const { data: pricing, error: priceError } = await (supabase
-      .rpc('calculate_package_price', { p_package_id: package_id, p_user_id: user.id }) as any)
+      .rpc('calculate_package_price', { p_package_id: package_id, p_user_id: user.id }))
 
     if (priceError || !pricing || pricing.length === 0) {
       return NextResponse.json({ error: "Package not found or inactive" }, { status: 404 })
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
         loyalty_tier_at_purchase: p.loyalty_tier
       })
       .select()
-      .single() as any)
+      .single())
 
     if (txError) {
       return NextResponse.json({ error: "Failed to create transaction" }, { status: 500 })

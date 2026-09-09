@@ -16,7 +16,7 @@ export async function GET(request: Request) {
       )
     `)
     .order('created_at', { ascending: false })
-    .limit(20) as any)
+    .limit(20))
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ logs: data })
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     target_type,
     target_id,
     details,
-  }) as any)
+  }))
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true })

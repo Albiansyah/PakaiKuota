@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
   const supabase = await createClient()
-  const { data: models } = await (supabase.from('models').select('*') as any)
+  const { data: models } = await (supabase.from('models').select('*'))
   if (!models) return NextResponse.json({ checked: 0 })
 
   const low: string[] = []

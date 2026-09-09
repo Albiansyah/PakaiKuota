@@ -11,6 +11,6 @@ export async function POST(request: Request) {
     user_id: user.id,
     reason,
     status: 'pending',
-  }) as any)
+  }))
   return NextResponse.json({ ok: true })
 }

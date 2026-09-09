@@ -14,7 +14,7 @@ export async function POST() {
   const { data: logs } = await (supabase
     .from('usage_logs')
     .select('user_id, api_key_id, cost_rupiah, request_metadata')
-    .gte('created_at', since) as any)
+    .gte('created_at', since))
 
   if (!logs) return NextResponse.json({ flagged: 0 })
 

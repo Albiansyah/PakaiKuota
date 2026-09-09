@@ -14,7 +14,7 @@ export async function GET() {
     .from('transactions')
     .select('user_id, amount_rupiah')
     .eq('status', 'success')
-    .gte('created_at', since) as any)
+    .gte('created_at', since))
 
   const totals: Record<string, number> = {}
   for (const t of data ?? []) {

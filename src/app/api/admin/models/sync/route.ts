@@ -29,7 +29,7 @@ export async function POST() {
       is_active: true,
       upstream_price_per_token: upstream,
       markup_price_per_token: upstream * markup(t),
-    }, { onConflict: 'name' }) as any)
+    }, { onConflict: 'name' }))
   }
 
   return NextResponse.json({ synced: data.data?.length ?? 0 })

@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     .from('users')
     .select('is_suspended, spending_limit_hourly, spending_limit_daily, created_at')
     .eq('id', user.id)
-    .single() as any)
+    .single())
 
   if (profile?.is_suspended) {
     return NextResponse.json({ error: 'Account suspended' }, { status: 403 })
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     p_amount: cost,
     p_hourly_limit: hourlyLimit,
     p_daily_limit: dailyLimit,
-  } as any) as any)
+  }))
 
   if (!deducted) {
     return NextResponse.json(
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
     completion_tokens: completion_tokens ?? 0,
     total_tokens: totalTokens,
     cost_rupiah: cost,
-  }) as any)
+  }))
 
   return NextResponse.json(data)
 }

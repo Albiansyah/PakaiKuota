@@ -9,5 +9,5 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!user) redirect("/login");
   const { data: profile } = await createSupabaseAdminClient().from("users").select("role").eq("id", user.id).single();
   if (!profile || !["support", "super_admin"].includes(profile.role)) redirect("/dashboard");
-  return <div className="min-h-screen bg-[#FAFAF9] text-[#122542] lg:grid lg:grid-cols-[16rem_1fr]"><AdminSidebar email={user.email} role={profile.role} /><main className="min-w-0 lg:col-start-2">{children}</main></div>;
+  return <div className="admin-shell min-h-screen lg:grid lg:grid-cols-[16rem_1fr]"><AdminSidebar email={user.email} role={profile.role} /><main className="min-w-0 lg:col-start-2">{children}</main></div>;
 }

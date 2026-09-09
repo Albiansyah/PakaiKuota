@@ -49,7 +49,7 @@ export async function POST(request: Request) {
         p_duration_days: duration_days,
         p_nominal_rupiah: nominal_rupiah,
         p_user_id: user.id
-      }) as any)
+      }))
 
     if (calcError || !calc || calc.length === 0) {
       return NextResponse.json({ error: "Calculation failed" }, { status: 500 })
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
         loyalty_tier_at_purchase: c.loyalty_tier
       })
       .select()
-      .single() as any)
+      .single())
 
     if (txError) {
       return NextResponse.json({ error: "Failed to create transaction" }, { status: 500 })

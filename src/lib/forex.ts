@@ -12,7 +12,7 @@ export async function getUsdIdrRate(): Promise<number> {
     .from('settings')
     .select('value')
     .eq('key', 'usd_idr_rate')
-    .single() as any)
+    .single())
   const value = data ? Number(data.value) : 15000
   cachedRate = { value, ts: Date.now() }
   return value

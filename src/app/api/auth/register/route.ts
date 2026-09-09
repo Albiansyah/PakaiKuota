@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     .from('signup_log')
     .select('*', { count: 'exact', head: true })
     .eq('ip', ip)
-    .gte('created_at', since) as any)
+    .gte('created_at', since))
 
   if ((count ?? 0) >= SIGNUP_LIMIT_PER_IP) {
     return NextResponse.json({ error: 'Batas signup per IP terlampaui' }, { status: 429 })
@@ -43,6 +43,6 @@ export async function POST(request: Request) {
   })
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
 
-  await (supabase.from('signup_log').insert({ ip, email }) as any)
+  await (supabase.from('signup_log').insert({ ip, email }))
   return NextResponse.json({ ok: true })
 }

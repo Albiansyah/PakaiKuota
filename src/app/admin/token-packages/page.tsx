@@ -9,6 +9,10 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Grid } from "@/components/layout"
 import { Trash2, Edit, Check, X } from "lucide-react"
+import type { Database } from "@/types/supabase"
+
+type TokenPackageInsert = Database["public"]["Tables"]["token_packages"]["Insert"]
+type TokenPackageUpdate = Database["public"]["Tables"]["token_packages"]["Update"]
 
 type TokenPackage = {
   id: string
@@ -33,7 +37,7 @@ export default function TokenPackagesPage() {
   useEffect(() => {
     ;(async () => {
       try {
-        const { data, error } = await (supabase as any).from("token_packages").select("*").order("sort_order")
+        const { data, error } = await (supabase).from("token_packages").select("*").order("sort_order")
         if (error) throw error
         setPackages(data as TokenPackage[])
       } catch (e) {
@@ -62,14 +66,14 @@ export default function TokenPackagesPage() {
   const savePackage = async () => {
     const payload = { ...form }
     if (editing) {
-      const { error } = await (supabase as any).from("token_packages").update(payload).eq("id", editing)
+      const { error } = await supabase.from("token_packages").update(payload as never).eq("id", editing)
       if (error) throw error
     } else {
-      const { error } = await (supabase as any).from("token_packages").insert(payload)
+      const { error } = await supabase.from("token_packages").insert(payload as never)
       if (error) throw error
     }
     // refresh list
-    const { data, error } = await (supabase as any).from("token_packages").select("*").order("sort_order")
+    const { data, error } = await (supabase).from("token_packages").select("*").order("sort_order")
     if (error) throw error
     setPackages(data as TokenPackage[])
     cancelEdit()
@@ -77,13 +81,13 @@ export default function TokenPackagesPage() {
 
   const deletePackage = async (id: string) => {
     if (!confirm("Hapus paket token ini?")) return
-    const { error } = await (supabase as any).from("token_packages").delete().eq("id", id)
+    const { error } = await (supabase).from("token_packages").delete().eq("id", id)
     if (error) throw error
     setPackages(prev => prev.filter(p => p.id !== id))
   }
 
   const toggleActive = async (id: string, current: boolean) => {
-    const { error } = await (supabase as any).from("token_packages").update({ is_active: !current }).eq("id", id)
+    const { error } = await supabase.from("token_packages").update({ is_active: !current } as never).eq("id", id)
     if (error) throw error
     setPackages(prev => prev.map(p => p.id === id ? { ...p, is_active: !current } : p))
   }

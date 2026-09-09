@@ -22,7 +22,7 @@ export async function POST() {
   const { data: logs } = await (supabase
     .from('usage_logs')
     .select('user_id, cost_rupiah')
-    .gte('created_at', since) as any)
+    .gte('created_at', since))
 
   const totals: Record<string, number> = {}
   for (const l of logs ?? []) totals[l.user_id] = (totals[l.user_id] ?? 0) + l.cost_rupiah
@@ -31,11 +31,11 @@ export async function POST() {
     .from('api_keys')
     .select('id, user_id, is_active, last_used_at')
     .lt('last_used_at', new Date(Date.now() - 180 * 86400 * 1000).toISOString())
-    .eq('is_active', true) as any)
+    .eq('is_active', true))
 
   let autoRevoked = 0
   for (const k of keys ?? []) {
-    await (supabase.from('api_keys').update({ is_active: false }).eq('id', k.id) as any)
+    await (supabase.from('api_keys').update({ is_active: false }).eq('id', k.id))
     autoRevoked++
     await alert(`Auto-revoke key ${k.id} user ${k.user_id}: idle >6mo`)
   }

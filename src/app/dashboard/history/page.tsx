@@ -50,7 +50,8 @@ export default function HistoryPage() {
   }
 
   useEffect(() => {
-    fetchTransactions()
+    const timer = setTimeout(() => { fetchTransactions() }, 0)
+    return () => clearTimeout(timer)
   }, [])
 
   const requestRefund = async (id: string) => {

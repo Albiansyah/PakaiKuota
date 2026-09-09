@@ -220,7 +220,7 @@ export default function AdminTransactionsPage() {
 
       {/* Detail Modal */}
       {selectedTxn && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setSelectedTxn(null)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--overlay)]" onClick={() => setSelectedTxn(null)}>
           <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-border)] p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold">Detail Transaksi</h2>

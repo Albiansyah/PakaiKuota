@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get("code")
   if (code) {
-    let response = NextResponse.redirect(new URL('/dashboard', requestUrl.origin))
+    const response = NextResponse.redirect(new URL('/dashboard', requestUrl.origin))
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
         .from("users")
         .select("role")
         .eq("id", user.id)
-        .single() as any)
+        .single())
 
       // If profile doesn't exist, create one
       if (!profile) {
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
           role: "user",
           balance_rupiah: 0,
           email_confirm: true,
-        }) as any)
+        }))
       }
 
       // Redirect based on role
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
         .from("users")
         .select("role")
         .eq("id", user.id)
-        .single() as any)
+        .single())
 
       const destination = NextResponse.redirect(new URL(
         updatedProfile?.role === "super_admin" || updatedProfile?.role === "support" ? "/admin" : "/dashboard",

@@ -9,7 +9,7 @@ export async function POST() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 })
 
-  const { data: users } = await (supabase.from('users').select('id, balance_rupiah') as any)
+  const { data: users } = await (supabase.from('users').select('id, balance_rupiah'))
   if (!users) return NextResponse.json({ reconciled: 0 })
 
   const redis = getRedis()
@@ -29,7 +29,7 @@ export async function POST() {
         difference: diff,
         status: 'alert',
         notes: `auto-corrected to ${corrected}`,
-      }) as any)
+      }))
       alerts++
     }
   }

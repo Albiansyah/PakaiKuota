@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     .from('transactions')
     .select('*')
     .eq('order_id', order_id)
-    .single() as any)
+    .single())
 
   if (!txn) return NextResponse.json({ error: 'not found' }, { status: 404 })
   if (txn.status !== 'success') return NextResponse.json({ skipped: true })
@@ -24,6 +24,6 @@ export async function POST(request: Request) {
     amount: txn.amount_rupiah,
     reason: 'auto: upstream failure',
     status: 'pending',
-  }) as any)
+  }))
   return NextResponse.json({ ok: true })
 }
