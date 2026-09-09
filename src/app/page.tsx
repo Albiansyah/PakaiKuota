@@ -32,7 +32,7 @@ export default function Home() {
           </Link>
           <nav aria-label="Navigasi utama" className="flex items-center gap-2 text-sm">
             <Link href="#harga" className="hidden min-h-11 items-center px-3 text-[#dbe4ef] hover:text-white focus-visible:outline-2 focus-visible:outline-[#F0A93B] sm:flex">Harga</Link>
-            <Link href="/login" className="flex min-h-11 items-center px-3 text-[#dbe4ef] hover:text-white focus-visible:outline-2 focus-visible:outline-[#F0A93B]">Masuk</Link>
+            <Link href="/docs" className="flex min-h-11 items-center px-3 text-[#dbe4ef] hover:text-white focus-visible:outline-2 focus-visible:outline-[#F0A93B]">Dokumentasi</Link><Link href="/login" className="flex min-h-11 items-center px-3 text-[#dbe4ef] hover:text-white focus-visible:outline-2 focus-visible:outline-[#F0A93B]">Masuk</Link>
             <Link href="/signup" className="flex min-h-11 items-center border border-[#F0A93B] bg-[#F0A93B] px-4 font-semibold text-[#122542] hover:bg-[#f7bb5d] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Buat akun</Link>
           </nav>
         </div>
@@ -86,7 +86,7 @@ export default function Home() {
         <div className="divide-y divide-[#d9e0e8] border-y border-[#d9e0e8]"><details className="group py-5"><summary className="cursor-pointer list-none font-semibold focus-visible:outline-2 focus-visible:outline-[#122542]">Apa yang terjadi jika request gagal?</summary><p className="mt-3 text-sm leading-6 text-[#40536d]">Hold dilepas dan saldo tidak dipotong.</p></details><details className="group py-5"><summary className="cursor-pointer list-none font-semibold focus-visible:outline-2 focus-visible:outline-[#122542]">Bagaimana pembayaran diverifikasi?</summary><p className="mt-3 text-sm leading-6 text-[#40536d]">Webhook hanya menjadi pemicu. Status diverifikasi ulang melalui Transaction Detail API Pakasir.</p></details><details className="group py-5"><summary className="cursor-pointer list-none font-semibold focus-visible:outline-2 focus-visible:outline-[#122542]">Kapan saya bisa mulai memakai API?</summary><p className="mt-3 text-sm leading-6 text-[#40536d]">Setelah pembayaran terverifikasi dan saldo masuk, buat API key dari dashboard.</p></details></div>
       </section>
 
-      <footer className="border-t border-[#d9e0e8] bg-[#122542] text-[#dbe4ef]"><div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-5 py-8 text-sm sm:flex-row sm:items-center sm:justify-between sm:px-8"><span className="font-semibold text-white">Pakai<span className="text-[#F0A93B]">Kuota</span></span><span>API LLM dengan pembayaran Rupiah.</span></div></footer>
+      <footer className="border-t border-[#d9e0e8] bg-[#122542] text-[#dbe4ef]"><div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-5 py-8 text-sm sm:flex-row sm:items-center sm:justify-between sm:px-8"><span className="font-semibold text-white">Pakai<span className="text-[#F0A93B]">Kuota</span></span><span>API LLM dengan pembayaran Rupiah.</span><Link href="/docs" className="text-[#F0A93B] hover:underline">Baca dokumentasi</Link></div></footer>
       <WhatsAppCs />
     </main>
   );

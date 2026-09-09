@@ -3,14 +3,14 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState } from "react"
-import { ChevronDown, ChevronRight, KeyRound, LayoutDashboard, LogOut, Package, ReceiptText, Settings, WalletCards, X } from "lucide-react"
+import { BookOpen, ChevronDown, ChevronRight, KeyRound, LayoutDashboard, LogOut, Package, ReceiptText, Settings, WalletCards, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 const groups = [
   { label: "Overview", items: [{ href: "/dashboard", label: "Ringkasan", icon: LayoutDashboard }] },
   { label: "Akun", items: [{ href: "/dashboard/keys", label: "API keys", icon: KeyRound }, { href: "/dashboard/settings", label: "Pengaturan", icon: Settings }] },
   { label: "Keuangan", items: [{ href: "/dashboard/topup", label: "Beli kuota", icon: Package }, { href: "/dashboard/transactions", label: "Transaksi", icon: ReceiptText }, { href: "/dashboard/ledger", label: "Mutasi saldo", icon: WalletCards }, { href: "/dashboard/refunds", label: "Refund", icon: WalletCards }] },
-  { label: "Developer", items: [{ href: "/dashboard/playground", label: "Playground", icon: KeyRound }] },
+  { label: "Developer", items: [{ href: "/dashboard/playground", label: "Playground", icon: KeyRound }, { href: "/docs", label: "Dokumentasi", icon: BookOpen }] },
 ]
 
 export function DashboardSidebar({ email }: { email: string | undefined }) {
