@@ -145,7 +145,7 @@ export async function POST(request: Request) {
   }
   clearTimeout(timeout);
 
-  if (!upstream.ok || !upstream.body) {
+  if (!upstream.body) {
     await finalizeRequest({ requestId: authorization.data, status: 'failed' });
     return errorResponse('UPSTREAM_ERROR', `Upstream request failed (${upstream.status})`, 502);
   }
@@ -176,6 +176,10 @@ export async function POST(request: Request) {
   const rawText = await upstream.text();
   console.log('[DEBUG] upstream status:', upstream.status);
   console.log('[DEBUG] upstream raw response:', rawText.slice(0, 2000));
+  if (!upstream.ok) {
+    await finalizeRequest({ requestId: authorization.data, status: 'failed' });
+    return errorResponse('UPSTREAM_ERROR', `Upstream request failed (${upstream.status}): ${rawText.slice(0, 300)}`, 502);
+  }
   let payload: unknown;
   try {
     payload = JSON.parse(rawText);
