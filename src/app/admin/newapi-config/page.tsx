@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useSupabase } from "@/components/providers/supabase-provider"
-import type { Database } from "@/types/supabase"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
 
@@ -22,11 +22,12 @@ type NewAPIConfig = {
   daily_limit_rupiah?: number
 }
 
+const helperClass = "mt-1.5 text-xs text-[var(--text-secondary)]"
+
 export default function NewAPIConfigPage() {
   const { supabase } = useSupabase()
   const [testing, setTesting] = useState(false)
   const router = useRouter()
-  const [config, setConfig] = useState<NewAPIConfig | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<Partial<NewAPIConfig>>({})
@@ -37,7 +38,6 @@ export default function NewAPIConfigPage() {
       try {
         const { data, error } = await (supabase as any).from("newapi_config").select("*").single()
         if (error) throw error
-        setConfig(data as NewAPIConfig)
         setForm(data as NewAPIConfig)
       } catch {
         toast.error("Konfigurasi NewAPI tidak bisa dimuat")
@@ -55,26 +55,18 @@ export default function NewAPIConfigPage() {
 
   const testConnection = async () => {
     setTesting(true)
-    const response = await fetch('/api/admin/newapi-config', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ base_url: form.base_url, api_key: form.api_key }) })
+    const response = await fetch("/api/admin/newapi-config", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ base_url: form.base_url, api_key: form.api_key }) })
     setTesting(false)
-    if (response.ok) toast.success('Koneksi NewAPI berhasil')
-    else toast.error('Koneksi NewAPI gagal')
+    if (response.ok) toast.success("Koneksi NewAPI berhasil")
+    else toast.error("Koneksi NewAPI gagal")
   }
 
   const save = async () => {
     setSaving(true)
     setSaved(false)
     try {
-      const { error } = await supabase
-        .from("newapi_config")
-        .upsert({ ...form, id: 1 } as never, { onConflict: "id" })
+      const { error } = await supabase.from("newapi_config").upsert({ ...form, id: 1 } as never, { onConflict: "id" })
       if (error) throw error
-      const { data, error: fetchError } = await supabase
-        .from("newapi_config")
-        .select("*")
-        .single()
-      if (fetchError) throw fetchError
-      setConfig(data as NewAPIConfig)
       setSaved(true)
       toast.success("Konfigurasi NewAPI tersimpan")
       setTimeout(() => setSaved(false), 3000)
@@ -89,109 +81,78 @@ export default function NewAPIConfigPage() {
 
   return (
     <div className="space-y-6">
-      {/* NewAPI Settings */}
       <Card>
         <CardHeader>
-          <CardTitle>Konfigurasi NewAPI</CardTitle>
-          <CardDescription>URL endpoint, API key, model default, dan markup harga</CardDescription>
+          <CardTitle>Endpoint & Model</CardTitle>
+          <CardDescription>Konfigurasi koneksi NewAPI dan model default.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
+        <CardContent className="space-y-5">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div>
               <Label htmlFor="base_url">Base URL</Label>
-              <Input id="base_url" name="base_url" value={form.base_url || ""} onChange={handleChange} placeholder="https://api.newapi.com" />
+              <Input className="mt-2" id="base_url" name="base_url" value={form.base_url || ""} onChange={handleChange} placeholder="https://api.newapi.com" />
+              <p className={helperClass}>URL endpoint upstream NewAPI.</p>
             </div>
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="api_key">API Key</Label>
-              <Input id="api_key" name="api_key" type="password" value={form.api_key || ""} onChange={handleChange} placeholder="newapi-xxx" />
+              <Input className="mt-2" id="api_key" name="api_key" type="password" value={form.api_key || ""} onChange={handleChange} placeholder="newapi-xxx" />
+              <p className={helperClass}>Kunci autentikasi untuk koneksi upstream.</p>
             </div>
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="default_model">Model Default</Label>
-              <Input id="default_model" name="default_model" value={form.default_model || ""} onChange={handleChange} placeholder="gpt-4o-mini" />
+              <Input className="mt-2" id="default_model" name="default_model" value={form.default_model || ""} onChange={handleChange} placeholder="gpt-4o-mini" />
+              <p className={helperClass}>Model yang digunakan saat tidak ada pilihan khusus.</p>
             </div>
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="markup_percent">Markup (%)</Label>
-              <Input id="markup_percent" name="markup_percent" type="number" min="0" max="100" value={form.markup_percent ?? 20} onChange={handleChange} />
-              <p className="text-xs text-muted-foreground">Persentase markup dari harga upstream</p>
+              <Input className="mt-2" id="markup_percent" name="markup_percent" type="number" min="0" max="100" value={form.markup_percent ?? 20} onChange={handleChange} />
+              <p className={helperClass}>Persentase markup dari harga upstream.</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <input
-              id="is_active"
-              type="checkbox"
-              name="is_active"
-              checked={form.is_active ?? true}
-              onChange={e => { setForm(prev => ({ ...prev, is_active: e.target.checked })); setSaved(false) }}
-              className="w-5 h-5 rounded"
-            />
-            <Label htmlFor="is_active">Aktifkan NewAPI</Label>
+          <div className="flex items-center justify-between rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface-hover)]/40 p-4">
+            <div className="space-y-1">
+              <Label htmlFor="is_active">Aktifkan NewAPI</Label>
+              <p className="text-sm text-[var(--text-secondary)]">Izinkan aplikasi menggunakan koneksi NewAPI.</p>
+            </div>
+            <Switch id="is_active" checked={form.is_active ?? true} onCheckedChange={is_active => { setForm(prev => ({ ...prev, is_active })); setSaved(false) }} />
           </div>
         </CardContent>
       </Card>
 
-      {/* Rate Limiting */}
       <Card>
         <CardHeader>
           <CardTitle>Rate Limiting</CardTitle>
-          <CardDescription>Batas pengeluaran per jam dan per hari untuk mencegah abuse</CardDescription>
+          <CardDescription>Batas pengeluaran untuk mencegah abuse.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
+        <CardContent>
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div>
               <Label htmlFor="hourly_limit_rupiah">Limit Per Jam (Rp)</Label>
-              <Input
-                id="hourly_limit_rupiah"
-                name="hourly_limit_rupiah"
-                type="number"
-                min="0"
-                value={form.hourly_limit_rupiah ?? 0}
-                onChange={handleChange}
-                placeholder="0 = unlimited"
-              />
-              <p className="text-xs text-muted-foreground">0 = tidak ada batas per jam</p>
+              <Input className="mt-2" id="hourly_limit_rupiah" name="hourly_limit_rupiah" type="number" min="0" value={form.hourly_limit_rupiah ?? 0} onChange={handleChange} placeholder="0 = unlimited" />
+              <p className={helperClass}>0 = tidak ada batas per jam.</p>
             </div>
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="daily_limit_rupiah">Limit Per Hari (Rp)</Label>
-              <Input
-                id="daily_limit_rupiah"
-                name="daily_limit_rupiah"
-                type="number"
-                min="0"
-                value={form.daily_limit_rupiah ?? 0}
-                onChange={handleChange}
-                placeholder="0 = unlimited"
-              />
-              <p className="text-xs text-muted-foreground">0 = tidak ada batas per hari</p>
+              <Input className="mt-2" id="daily_limit_rupiah" name="daily_limit_rupiah" type="number" min="0" value={form.daily_limit_rupiah ?? 0} onChange={handleChange} placeholder="0 = unlimited" />
+              <p className={helperClass}>0 = tidak ada batas per hari.</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Token Packages */}
       <Card>
         <CardHeader>
           <CardTitle>Paket Token</CardTitle>
-          <CardDescription>Kelola paket token untuk dijual. bisa juga langsung dari menu Paket Token.</CardDescription>
+          <CardDescription>Kelola paket token yang tersedia untuk dijual.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <Button variant="outline" onClick={() => router.push("/admin/token-packages")}>
-            Kelola Paket Token
-          </Button>
-        </CardContent>
+        <CardContent><Button variant="outline" onClick={() => router.push("/admin/token-packages")}>Kelola Paket Token</Button></CardContent>
       </Card>
 
       <Separator />
-
       <div className="flex items-center gap-4">
-<Button variant="outline" onClick={testConnection} disabled={testing || !form.base_url || !form.api_key} size="lg">
-           {testing ? "Menguji..." : "Test koneksi"}
-         </Button>
-         <Button onClick={save} disabled={saving} size="lg">
-           {saving ? "Menyimpan..." : "Simpan Konfigurasi"}
-         </Button>
-        {saved && (
-          <span className="text-sm text-green-600 dark:text-green-400">✓ Konfigurasi tersimpan!</span>
-        )}
+        <Button variant="outline" onClick={testConnection} disabled={testing || !form.base_url || !form.api_key} size="lg">{testing ? "Menguji..." : "Test koneksi"}</Button>
+        <Button onClick={save} disabled={saving} size="lg">{saving ? "Menyimpan..." : "Simpan Konfigurasi"}</Button>
+        {saved && <span className="text-sm text-[var(--success)]">Konfigurasi tersimpan.</span>}
       </div>
     </div>
   )
