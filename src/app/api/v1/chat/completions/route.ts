@@ -119,6 +119,7 @@ export async function POST(request: Request) {
     return errorResponse('UPSTREAM_ERROR', 'Upstream gateway is not configured', 502);
   }
 
+  const upstreamBody = { ...body, model: model.name ?? body.model };
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 120_000);
   let upstream: Response;
@@ -126,7 +127,7 @@ export async function POST(request: Request) {
     upstream = await fetch(upstreamUrl, {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${upstreamKey}` },
-      body: JSON.stringify(body),
+      body: JSON.stringify(upstreamBody),
       signal: controller.signal,
     });
   } catch {
