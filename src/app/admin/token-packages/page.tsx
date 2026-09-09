@@ -135,11 +135,9 @@ export default function TokenPackagesPage() {
         </CardContent>
       </Card>
 
-      {(editing !== null || packages.length === 0) && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{editing ? "Edit Paket" : "Buat Paket Baru"}</CardTitle>
-          </CardHeader>
+      {(editing !== null || packages.length === 0) && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-label={editing ? "Edit paket" : "Buat paket"}>
+        <Card className="max-h-[90vh] w-full max-w-lg overflow-y-auto shadow-2xl">
+          <CardHeader><CardTitle>{editing ? "Edit Paket" : "Buat Paket Baru"}</CardTitle><CardDescription>Atur nama, harga, token, bonus, dan durasi paket.</CardDescription></CardHeader>
           <CardContent className="space-y-4">
             <Input name="name" placeholder="Nama paket" value={form.name || ""} onChange={handleChange} />
             <Input name="description" placeholder="Deskripsi" value={form.description || ""} onChange={handleChange} />
@@ -148,13 +146,10 @@ export default function TokenPackagesPage() {
             <Input name="bonus_percent" type="number" placeholder="Bonus %" value={form.bonus_percent?.toString() || ""} onChange={handleChange} />
             <Input name="duration_days" type="number" placeholder="Durasi (hari)" value={form.duration_days?.toString() || ""} onChange={handleChange} />
             <Input name="sort_order" type="number" placeholder="Urutan" value={form.sort_order?.toString() || ""} onChange={handleChange} />
-            <div className="flex gap-2">
-              <Button onClick={savePackage}>Simpan</Button>
-              <Button variant="secondary" onClick={cancelEdit}>Batal</Button>
-            </div>
+            <div className="flex justify-end gap-2"><Button variant="secondary" onClick={cancelEdit}>Batal</Button><Button onClick={savePackage}>Simpan</Button></div>
           </CardContent>
         </Card>
-      )}
+      </div>}
     </div>
   )
 }

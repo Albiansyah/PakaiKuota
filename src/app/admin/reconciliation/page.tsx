@@ -17,12 +17,10 @@ import {
 
 type ReconciliationLog = {
   id: string
-  source: string
-  expected_amount: number
-  actual_amount: number
-  difference: number
+  category: string
   status: string
-  notes: string | null
+  details: Record<string, unknown>
+
   created_at: string
 }
 
@@ -80,9 +78,7 @@ export default function AdminReconciliationPage() {
             </p>
           </div>
         </div>
-        <Button variant="outline" size="icon" onClick={() => location.reload()}>
-          <RefreshCw className="h-4 w-4" />
-        </Button>
+<div className="flex gap-2"><Button variant="outline" size="icon" onClick={() => location.reload()}><RefreshCw className="h-4 w-4" /></Button><Button onClick={async () => { await fetch('/api/reconcile', { method: 'POST' }); location.reload() }}>Jalankan audit</Button></div>
       </div>
 
       <Card>
@@ -92,10 +88,8 @@ export default function AdminReconciliationPage() {
               <thead>
                 <tr className="border-b border-[var(--color-border)]">
                   <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-muted-foreground)] uppercase">Waktu</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-muted-foreground)] uppercase">Sumber</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-[var(--color-muted-foreground)] uppercase">Expected</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-[var(--color-muted-foreground)] uppercase">Actual</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-[var(--color-muted-foreground)] uppercase">Selisih</th>
+<th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-muted-foreground)] uppercase">Kategori</th>
+                   <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-muted-foreground)] uppercase">Detail</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-muted-foreground)] uppercase">Status</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-muted-foreground)] uppercase">Catatan</th>
                 </tr>
@@ -103,13 +97,13 @@ export default function AdminReconciliationPage() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="py-16 text-center">
+                    <td colSpan={5} className="py-16 text-center">
                       <Loader2 className="h-6 w-6 animate-spin mx-auto text-[var(--color-muted-foreground)]" />
                     </td>
                   </tr>
                 ) : logs.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-16 text-center text-[var(--color-muted-foreground)]">
+                    <td colSpan={5} className="py-16 text-center text-[var(--color-muted-foreground)]">
                       Belum ada log rekonsiliasi
                     </td>
                   </tr>
@@ -119,16 +113,8 @@ export default function AdminReconciliationPage() {
                       <td className="px-4 py-3 text-sm font-mono whitespace-nowrap">
                         {new Date(log.created_at).toLocaleString("id-ID")}
                       </td>
-                      <td className="px-4 py-3 text-sm">{log.source}</td>
-                      <td className="px-4 py-3 text-sm font-mono text-right">
-                        Rp {log.expected_amount.toLocaleString("id-ID")}
-                      </td>
-                      <td className="px-4 py-3 text-sm font-mono text-right">
-                        Rp {log.actual_amount.toLocaleString("id-ID")}
-                      </td>
-                      <td className={`px-4 py-3 text-sm font-mono text-right font-bold ${log.difference !== 0 ? "text-[var(--color-destructive)]" : "text-[var(--color-success)]"}`}>
-                        {log.difference >= 0 ? "+" : ""}Rp {log.difference.toLocaleString("id-ID")}
-                      </td>
+<td className="px-4 py-3 text-sm">{log.category}</td>
+                       <td className="max-w-md px-4 py-3 text-xs font-mono">{JSON.stringify(log.details)}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           {statusIcon(log.status)}
@@ -136,7 +122,7 @@ export default function AdminReconciliationPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-[var(--color-muted-foreground)] max-w-xs truncate">
-                        {log.notes ?? "-"}
+                        {log.status}
                       </td>
                     </tr>
                   ))

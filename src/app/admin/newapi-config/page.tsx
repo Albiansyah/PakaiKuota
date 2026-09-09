@@ -136,7 +136,7 @@ export default function NewAPIConfigPage() {
             <div>
               <Label htmlFor="hourly_limit_rupiah">Limit Per Jam (Rp)</Label>
               <Input className="mt-2" id="hourly_limit_rupiah" name="hourly_limit_rupiah" type="number" min="0" value={form.hourly_limit_rupiah ?? 0} onChange={handleChange} placeholder="0 = unlimited" />
-              <p className={helperClass}>0 = tidak ada batas per jam.</p>
+              <p className={helperClass}>Batas pengeluaran billing, bukan batas request Upstash. 0 = unlimited.</p>
             </div>
             <div>
               <Label htmlFor="daily_limit_rupiah">Limit Per Hari (Rp)</Label>

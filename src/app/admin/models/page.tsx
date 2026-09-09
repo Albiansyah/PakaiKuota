@@ -52,7 +52,7 @@ export default function AdminModelsPage() {
   const [connection, setConnection] = useState<{ last_test_status?: "success" | "failed" | null; last_test_response_time_ms?: number | null; last_tested_at?: string | null }>({})
 
   useEffect(() => {
-    if (!user) { router.push("/login"); return }
+    if (!user) return
     const fetchModels = async () => {
       try {
         const res = await fetch("/api/admin/models")

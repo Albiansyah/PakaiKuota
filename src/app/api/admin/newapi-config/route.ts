@@ -35,18 +35,27 @@ export async function PATCH(request: Request) {
 export async function POST(request: Request) {
   const guard = await requireRole(['super_admin'])
   if (!guard.ok) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  const body = await request.json().catch(() => null) as { base_url?: string; api_key?: string } | null
+  const body = await request.json().catch(() => null) as { base_url?: string; api_key?: string; default_model?: string } | null
   if (!body?.base_url || !body.api_key || body.api_key.trim().length < 8 || /^(placeholder|your[-_ ]?api[-_ ]?key|xxx+)$/i.test(body.api_key.trim()) || !/^https?:\/\//.test(body.base_url)) return NextResponse.json({ error: 'invalid_config' }, { status: 400 })
   const started = Date.now()
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 10000)
   try {
-    const response = await fetch(new URL('/api/status', body.base_url), { headers: { Authorization: `Bearer ${body.api_key}` }, signal: controller.signal, cache: 'no-store' })
+    const headers = { Authorization: `Bearer ${body.api_key}`, 'Content-Type': 'application/json' }
+    const statusResponse = await fetch(new URL('/api/status', body.base_url), { headers, signal: controller.signal, cache: 'no-store' })
+    if (!statusResponse.ok) throw new Error(`status_http_${statusResponse.status}`)
+    const modelsResponse = await fetch(new URL('/v1/models', body.base_url), { headers, signal: controller.signal, cache: 'no-store' })
+    if (!modelsResponse.ok) throw new Error(`models_http_${modelsResponse.status}`)
+    const modelsPayload = await modelsResponse.json() as { data?: Array<{ id?: string }> }
+    const model = body.default_model || modelsPayload.data?.find((item) => item.id)?.id
+    if (!model) throw new Error('no_model_available')
+    const chatResponse = await fetch(new URL('/v1/chat/completions', body.base_url), { method: 'POST', headers, body: JSON.stringify({ model, messages: [{ role: 'user', content: 'ping' }], max_tokens: 1 }), signal: controller.signal, cache: 'no-store' })
     const responseTimeMs = Date.now() - started
-    const status = response.ok ? 'success' : 'failed'
-    await createSupabaseAdminClient().from('newapi_config').update({ last_test_status: status, last_test_response_time_ms: responseTimeMs, last_test_error: response.ok ? null : `HTTP ${response.status}`, last_tested_at: new Date().toISOString() }).eq('id', 1)
-    if (!response.ok) return NextResponse.json({ error: 'connection_failed', response_time_ms: responseTimeMs }, { status: 502 })
-    return NextResponse.json({ ok: true, response_time_ms: responseTimeMs })
+    const status = chatResponse.ok ? 'success' : 'failed'
+    const errorMessage = chatResponse.ok ? null : `chat_http_${chatResponse.status}`
+    await createSupabaseAdminClient().from('newapi_config').update({ last_test_status: status, last_test_response_time_ms: responseTimeMs, last_test_error: errorMessage, last_tested_at: new Date().toISOString() }).eq('id', 1)
+    if (!chatResponse.ok) return NextResponse.json({ error: errorMessage, model, response_time_ms: responseTimeMs }, { status: 502 })
+    return NextResponse.json({ ok: true, model, response_time_ms: responseTimeMs })
   } catch {
     const responseTimeMs = Date.now() - started
     await createSupabaseAdminClient().from('newapi_config').update({ last_test_status: 'failed', last_test_response_time_ms: responseTimeMs, last_test_error: 'connection_unavailable', last_tested_at: new Date().toISOString() }).eq('id', 1)
