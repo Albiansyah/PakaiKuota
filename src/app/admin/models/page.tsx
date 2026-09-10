@@ -9,7 +9,9 @@ import {
   ChevronDown,
   Cpu,
   Edit3,
+  Layers,
   Loader2,
+  Minus,
   MoreHorizontal,
   Package,
   Pencil,
@@ -56,6 +58,36 @@ function tierTone(tier: string) {
   return "border-(--pk-line-2) bg-[#0b1626] text-(--pk-text-dim)"
 }
 
+function SelectCheckbox({
+  checked,
+  indeterminate = false,
+  onChange,
+  label,
+}: {
+  checked: boolean
+  indeterminate?: boolean
+  onChange: () => void
+  label: string
+}) {
+  const active = checked || indeterminate
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={indeterminate ? "mixed" : checked}
+      aria-label={label}
+      onClick={onChange}
+      className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-all ${
+        active
+          ? "border-(--pk-accent)/60 bg-(--pk-accent)/15 text-(--pk-accent)"
+          : "border-(--pk-line-2) bg-[#0b1626] text-transparent hover:border-(--pk-text-dim) hover:text-(--pk-text-mute)/50"
+      }`}
+    >
+      {indeterminate ? <Minus size={12} /> : <Check size={12} />}
+    </button>
+  )
+}
+
 export default function AdminModelsPage() {
   const { user } = useSupabase()
   const router = useRouter()
@@ -77,6 +109,11 @@ export default function AdminModelsPage() {
 
   const [filter, setFilter] = useState<StatusFilter>("all")
   const [query, setQuery] = useState("")
+
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkSaving, setBulkSaving] = useState(false)
+  const [bulkGroupOpen, setBulkGroupOpen] = useState(false)
+  const selectAllRef = useRef<HTMLInputElement | null>(null)
 
   const fetchModels = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
@@ -161,6 +198,54 @@ export default function AdminModelsPage() {
     }
     return list
   }, [models, filter, query])
+
+  /* -------------------- selection helpers -------------------- */
+
+  const allFilteredSelected = useMemo(
+    () => filtered.length > 0 && filtered.every((m) => selectedIds.has(m.id)),
+    [filtered, selectedIds]
+  )
+  const someFilteredSelected = useMemo(
+    () => filtered.some((m) => selectedIds.has(m.id)),
+    [filtered, selectedIds]
+  )
+  const selectedCount = selectedIds.size
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const toggleSelectAll = useCallback(() => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      const everySelected =
+        filtered.length > 0 && filtered.every((m) => next.has(m.id))
+      if (everySelected) {
+        filtered.forEach((m) => next.delete(m.id))
+      } else {
+        filtered.forEach((m) => next.add(m.id))
+      }
+      return next
+    })
+  }, [filtered])
+
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set())
+  }, [])
+
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate =
+        someFilteredSelected && !allFilteredSelected
+    }
+  }, [someFilteredSelected, allFilteredSelected])
+
+  /* -------------------- single-item actions -------------------- */
 
   async function handleSync() {
     setSyncing(true)
@@ -249,6 +334,65 @@ export default function AdminModelsPage() {
       // ignore
     } finally {
       setGroupEditTarget(null)
+    }
+  }
+
+  /* -------------------- bulk actions -------------------- */
+
+  async function bulkSetEnabled(enabled: boolean) {
+    if (selectedIds.size === 0 || bulkSaving) return
+    setBulkSaving(true)
+    const ids = Array.from(selectedIds)
+    try {
+      await Promise.all(
+        ids.map((id) =>
+          fetch("/api/admin/models", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ modelId: id, enabled }),
+          })
+        )
+      )
+      setModels((prev) =>
+        prev.map((m) => (selectedIds.has(m.id) ? { ...m, enabled } : m))
+      )
+      setSelectedIds(new Set())
+    } catch {
+      // ignore
+    } finally {
+      setBulkSaving(false)
+    }
+  }
+
+  async function bulkSetGroup(group: string) {
+    const trimmed = group.trim()
+    if (!trimmed || selectedIds.size === 0) {
+      setBulkGroupOpen(false)
+      return
+    }
+    setBulkSaving(true)
+    const ids = Array.from(selectedIds)
+    try {
+      await Promise.all(
+        ids.map((id) =>
+          fetch("/api/admin/models", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ modelId: id, group_name: trimmed }),
+          })
+        )
+      )
+      setModels((prev) =>
+        prev.map((m) =>
+          selectedIds.has(m.id) ? { ...m, group_name: trimmed } : m
+        )
+      )
+      setSelectedIds(new Set())
+    } catch {
+      // ignore
+    } finally {
+      setBulkSaving(false)
+      setBulkGroupOpen(false)
     }
   }
 
@@ -511,6 +655,16 @@ export default function AdminModelsPage() {
                 <table className="w-full min-w-5xl text-left text-sm">
                   <thead className="border-b border-(--pk-line) text-(--pk-text-mute)">
                     <tr>
+                      <th className="w-12 px-5 py-4">
+                        <SelectCheckbox
+                          checked={allFilteredSelected}
+                          indeterminate={
+                            !allFilteredSelected && someFilteredSelected
+                          }
+                          onChange={toggleSelectAll}
+                          label="Pilih semua model pada tampilan ini"
+                        />
+                      </th>
                       <th className="px-5 py-4 text-[11px] font-semibold uppercase tracking-widest">
                         Model
                       </th>
@@ -540,12 +694,24 @@ export default function AdminModelsPage() {
                       const tierLabel = getModelTierLabel(m.tier)
                       const menuOpen = menuOpenId === m.id
                       const isLow = m.markup_percent < 10
+                      const isSelected = selectedIds.has(m.id)
 
                       return (
                         <tr
                           key={m.id}
-                          className="border-b border-(--pk-line) transition-colors last:border-0 hover:bg-white/2"
+                          className={`border-b border-(--pk-line) transition-colors last:border-0 ${
+                            isSelected
+                              ? "bg-(--pk-accent)/5"
+                              : "hover:bg-white/2"
+                          }`}
                         >
+                          <td className="px-5 py-4">
+                            <SelectCheckbox
+                              checked={isSelected}
+                              onChange={() => toggleSelect(m.id)}
+                              label={`Pilih ${m.name}`}
+                            />
+                          </td>
                           <td className="px-5 py-4">
                             <div className="flex items-center gap-2">
                               <p className="truncate font-mono text-xs font-medium text-(--pk-text)">
@@ -740,41 +906,54 @@ export default function AdminModelsPage() {
                   const isEditing = editingId === m.id
                   const tierLabel = getModelTierLabel(m.tier)
                   const isLow = m.markup_percent < 10
+                  const isSelected = selectedIds.has(m.id)
 
                   return (
-                    <li key={m.id} className="p-4">
+                    <li
+                      key={m.id}
+                      className={`p-4 ${isSelected ? "bg-(--pk-accent)/5" : ""}`}
+                    >
                       <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <p className="truncate font-mono text-xs font-medium text-(--pk-text)">
-                              {m.name}
-                            </p>
-                            {isLow && (
-                              <AlertTriangle
-                                size={11}
-                                className="shrink-0 text-(--pk-accent)"
-                              />
-                            )}
+                        <div className="flex min-w-0 flex-1 items-start gap-3">
+                          <div className="pt-0.5">
+                            <SelectCheckbox
+                              checked={isSelected}
+                              onChange={() => toggleSelect(m.id)}
+                              label={`Pilih ${m.name}`}
+                            />
                           </div>
-                          <div className="mt-2 flex flex-wrap items-center gap-2">
-                            {tierLabel && (
-                              <span
-                                className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${tierTone(m.tier)}`}
-                              >
-                                {tierLabel}
-                              </span>
-                            )}
-                            {m.enabled ? (
-                              <span className="inline-flex items-center gap-1 rounded-full border border-[#34d399]/30 bg-[#34d399]/10 px-2 py-0.5 text-[10px] font-medium text-[#6ee7b7]">
-                                <span className="h-1 w-1 rounded-full bg-[#34d399]" />
-                                Aktif
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 rounded-full border border-(--pk-line-2) bg-[#0b1626] px-2 py-0.5 text-[10px] text-(--pk-text-mute)">
-                                <span className="h-1 w-1 rounded-full bg-(--pk-line-2)" />
-                                Nonaktif
-                              </span>
-                            )}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="truncate font-mono text-xs font-medium text-(--pk-text)">
+                                {m.name}
+                              </p>
+                              {isLow && (
+                                <AlertTriangle
+                                  size={11}
+                                  className="shrink-0 text-(--pk-accent)"
+                                />
+                              )}
+                            </div>
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              {tierLabel && (
+                                <span
+                                  className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${tierTone(m.tier)}`}
+                                >
+                                  {tierLabel}
+                                </span>
+                              )}
+                              {m.enabled ? (
+                                <span className="inline-flex items-center gap-1 rounded-full border border-[#34d399]/30 bg-[#34d399]/10 px-2 py-0.5 text-[10px] font-medium text-[#6ee7b7]">
+                                  <span className="h-1 w-1 rounded-full bg-[#34d399]" />
+                                  Aktif
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 rounded-full border border-(--pk-line-2) bg-[#0b1626] px-2 py-0.5 text-[10px] text-(--pk-text-mute)">
+                                  <span className="h-1 w-1 rounded-full bg-(--pk-line-2)" />
+                                  Nonaktif
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
 
@@ -929,11 +1108,88 @@ export default function AdminModelsPage() {
         </div>
       </div>
 
+      {/* Bulk action bar */}
+      {selectedCount > 0 && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center px-4 sm:bottom-6">
+          <div className="pk-panel pk-menu-in pointer-events-auto flex flex-wrap items-center gap-2 p-2 pl-3.5 shadow-[0_18px_40px_-12px_rgba(0,0,0,0.65)]">
+            <div className="flex items-center gap-2 pr-1">
+              <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-(--pk-accent)/15 px-1.5 font-mono text-[11px] font-semibold text-(--pk-accent)">
+                {selectedCount}
+              </span>
+              <span className="text-xs text-(--pk-text-dim)">
+                model dipilih
+              </span>
+            </div>
+
+            <div className="hidden h-5 w-px bg-(--pk-line) sm:block" />
+
+            <button
+              type="button"
+              onClick={() => setBulkGroupOpen(true)}
+              disabled={bulkSaving}
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-medium text-(--pk-text-dim) transition-colors hover:bg-white/5 hover:text-white disabled:opacity-50"
+            >
+              <Layers size={13} />
+              Set grup
+            </button>
+
+            <button
+              type="button"
+              onClick={() => void bulkSetEnabled(true)}
+              disabled={bulkSaving}
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-medium text-[#6ee7b7] transition-colors hover:bg-[#34d399]/10 disabled:opacity-50"
+            >
+              {bulkSaving ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <Power size={13} />
+              )}
+              Aktifkan
+            </button>
+
+            <button
+              type="button"
+              onClick={() => void bulkSetEnabled(false)}
+              disabled={bulkSaving}
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-medium text-[#fca5a5] transition-colors hover:bg-[#f87171]/10 disabled:opacity-50"
+            >
+              {bulkSaving ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <PowerOff size={13} />
+              )}
+              Nonaktifkan
+            </button>
+
+            <div className="hidden h-5 w-px bg-(--pk-line) sm:block" />
+
+            <button
+              type="button"
+              onClick={clearSelection}
+              disabled={bulkSaving}
+              aria-label="Batalkan pilihan"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-(--pk-text-mute) transition-colors hover:bg-white/5 hover:text-white disabled:opacity-50"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {groupEditTarget && (
         <GroupEditModal
           model={groupEditTarget}
           onClose={() => setGroupEditTarget(null)}
           onSave={(group) => void saveGroup(groupEditTarget, group)}
+        />
+      )}
+
+      {bulkGroupOpen && (
+        <BulkGroupModal
+          count={selectedCount}
+          busy={bulkSaving}
+          onClose={() => setBulkGroupOpen(false)}
+          onSave={(group) => void bulkSetGroup(group)}
         />
       )}
     </div>
@@ -1069,6 +1325,155 @@ function GroupEditModal({
             >
               <Save size={13} />
               Simpan grup
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function BulkGroupModal({
+  count,
+  busy,
+  onClose,
+  onSave,
+}: {
+  count: number
+  busy: boolean
+  onClose: () => void
+  onSave: (group: string) => void
+}) {
+  const [value, setValue] = useState("")
+  const inputRef = useRef<HTMLInputElement | null>(null)
+
+  useEffect(() => {
+    inputRef.current?.focus()
+    const original = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    function onEsc(e: KeyboardEvent) {
+      if (e.key === "Escape" && !busy) onClose()
+    }
+    document.addEventListener("keydown", onEsc)
+    return () => {
+      document.body.style.overflow = original
+      document.removeEventListener("keydown", onEsc)
+    }
+  }, [onClose, busy])
+
+  const suggestions = [
+    "OpenAI",
+    "Anthropic",
+    "Gemini",
+    "NVIDIA",
+    "Mistral",
+    "Lainnya",
+  ]
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="bulk-group-title"
+      className="fixed inset-0 z-60 flex items-center justify-center p-4"
+    >
+      <div
+        aria-hidden
+        onClick={() => !busy && onClose()}
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+      />
+
+      <div className="pk-panel pk-menu-in relative w-full max-w-md overflow-hidden p-6">
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={busy}
+          aria-label="Tutup"
+          className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-lg text-(--pk-text-mute) transition-colors hover:bg-white/5 hover:text-white disabled:opacity-40"
+        >
+          <X size={16} />
+        </button>
+
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-(--pk-line-2) bg-[#0b1626]">
+          <Layers size={20} className="text-(--pk-accent)" />
+        </div>
+
+        <h2
+          id="bulk-group-title"
+          className="mt-4 text-lg font-semibold text-(--pk-text)"
+        >
+          Set grup massal
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-(--pk-text-dim)">
+          Terapkan grup yang sama untuk{" "}
+          <span className="font-semibold text-(--pk-text)">
+            {count} model
+          </span>{" "}
+          terpilih.
+        </p>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (busy) return
+            onSave(value)
+          }}
+          className="mt-5 space-y-4"
+        >
+          <label className="block text-xs font-medium">
+            Nama grup
+            <input
+              ref={inputRef}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder="Misalnya: OpenAI"
+              className="mt-1.5 min-h-11 w-full rounded-xl border border-(--pk-line-2) bg-[#0b1626] px-3.5 text-sm text-(--pk-text) outline-none transition-colors placeholder:text-(--pk-text-mute) focus:border-(--pk-accent) focus:ring-2 focus:ring-(--pk-accent)/25"
+            />
+          </label>
+
+          <div>
+            <p className="text-[11px] uppercase tracking-widest text-(--pk-text-mute)">
+              Saran
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {suggestions.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setValue(s)}
+                  disabled={busy}
+                  className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-all disabled:opacity-50 ${
+                    value === s
+                      ? "border-(--pk-accent)/50 bg-(--pk-accent)/10 text-(--pk-accent)"
+                      : "border-(--pk-line-2) bg-[#0b1626] text-(--pk-text-dim) hover:border-(--pk-line-2) hover:text-white"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={busy}
+              className="pk-btn-ghost inline-flex min-h-10 items-center justify-center px-4 text-sm font-medium disabled:opacity-50"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={busy || !value.trim()}
+              className="pk-btn-primary inline-flex min-h-10 items-center justify-center gap-2 px-4 text-sm disabled:opacity-50"
+            >
+              {busy ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <Layers size={13} />
+              )}
+              Terapkan ke {count} model
             </button>
           </div>
         </form>
