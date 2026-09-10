@@ -88,10 +88,12 @@ export default function Home() {
       {/* ============ HERO ============ */}
       <section className="relative">
         <div className="mx-auto grid w-full max-w-7xl gap-14 px-5 pb-20 pt-20 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:pb-28 lg:pt-28">
-          <div>
-            <div className="pk-reveal inline-flex items-center gap-2.5 rounded-full border border-[color:var(--pk-line-2)] bg-[#0b1626]/70 px-3.5 py-1.5 text-xs font-medium tracking-wide text-[color:var(--pk-text-dim)]">
-              <span className="pk-dot" aria-hidden />
-              API LLM sesuai kebutuhanmu, kapanpun.
+          <div className="min-w-0">
+            <div className="pk-reveal inline-flex max-w-full items-center gap-2.5 rounded-full border border-[color:var(--pk-line-2)] bg-[#0b1626]/70 px-3.5 py-1.5 text-xs font-medium tracking-wide text-[color:var(--pk-text-dim)]">
+              <span className="pk-dot shrink-0" aria-hidden />
+              <span className="truncate">
+                API LLM sesuai kebutuhanmu, kapanpun.
+              </span>
             </div>
 
             <h1 className="pk-reveal pk-d1 mt-6 max-w-3xl text-4xl font-semibold leading-[1.05] tracking-[-0.045em] sm:text-6xl">
@@ -121,58 +123,64 @@ export default function Home() {
               </Link>
             </div>
 
-            <dl className="pk-reveal pk-d4 mt-12 grid max-w-lg grid-cols-3 gap-4 border-t border-[color:var(--pk-line)] pt-6">
-              <div>
-                <dt className="text-[11px] uppercase tracking-widest text-[color:var(--pk-text-mute)]">
+            <dl className="pk-reveal pk-d4 mt-12 grid max-w-lg grid-cols-3 gap-3 border-t border-[color:var(--pk-line)] pt-6 sm:gap-4">
+              <div className="min-w-0">
+                <dt className="text-[10px] uppercase tracking-wider text-[color:var(--pk-text-mute)] sm:text-[11px] sm:tracking-widest">
                   Pembayaran
                 </dt>
-                <dd className="mt-1 text-sm font-medium">QRIS &amp; VA</dd>
+                <dd className="mt-1 truncate text-sm font-medium">
+                  QRIS &amp; VA
+                </dd>
               </div>
-              <div>
-                <dt className="text-[11px] uppercase tracking-widest text-[color:var(--pk-text-mute)]">
+              <div className="min-w-0">
+                <dt className="text-[10px] uppercase tracking-wider text-[color:var(--pk-text-mute)] sm:text-[11px] sm:tracking-widest">
                   Endpoint
                 </dt>
-                <dd className="mt-1 text-sm font-medium">Chat Completions</dd>
+                <dd className="mt-1 truncate text-sm font-medium">
+                  Chat Completions
+                </dd>
               </div>
-              <div>
-                <dt className="text-[11px] uppercase tracking-widest text-[color:var(--pk-text-mute)]">
+              <div className="min-w-0">
+                <dt className="text-[10px] uppercase tracking-wider text-[color:var(--pk-text-mute)] sm:text-[11px] sm:tracking-widest">
                   Billing
                 </dt>
-                <dd className="mt-1 text-sm font-medium">Per token</dd>
+                <dd className="mt-1 truncate text-sm font-medium">
+                  Per token
+                </dd>
               </div>
             </dl>
           </div>
 
-          <div className="pk-reveal pk-d2 relative">
+          <div className="pk-reveal pk-d2 relative min-w-0">
             <div className="pk-panel pk-float overflow-hidden">
               <div className="flex items-center gap-2 border-b border-[color:var(--pk-line)] px-4 py-3">
                 <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
                 <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
                 <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
-                <span className="ml-3 font-mono text-xs text-[color:var(--pk-text-mute)]">
+                <span className="ml-3 truncate font-mono text-xs text-[color:var(--pk-text-mute)]">
                   request.sh
                 </span>
               </div>
 
               <div className="pk-terminal pk-scroll overflow-x-auto p-5 font-mono text-[12.5px] leading-6">
-                <div className="text-[color:var(--pk-text-mute)]">
+                <div className="whitespace-pre text-[color:var(--pk-text-mute)]">
                   <span className="text-[color:var(--pk-cyan)]">$</span> curl
                   https://api.pakaikuota.cloud/v1/chat/completions \
                 </div>
-                <div className="pl-4 text-[color:var(--pk-text-dim)]">
+                <div className="whitespace-pre pl-4 text-[color:var(--pk-text-dim)]">
                   -H{" "}
                   <span className="text-[color:var(--pk-accent-2)]">
                     &quot;Authorization: Bearer $PK_KEY&quot;
                   </span>{" "}
                   \
                 </div>
-                <div className="pl-4 text-[color:var(--pk-text-dim)]">
+                <div className="whitespace-pre pl-4 text-[color:var(--pk-text-dim)]">
                   -d{" "}
                   <span className="text-[color:var(--pk-accent-2)]">
                     &apos;{`{ "model": "premium", "messages": [...] }`}&apos;
                   </span>
                 </div>
-                <div className="mt-3 text-[#7ee787]">
+                <div className="mt-3 whitespace-pre text-[#7ee787]">
                   ✓ 200 OK · 128 tokens · Rp 42
                 </div>
               </div>
@@ -188,7 +196,7 @@ export default function Home() {
                     className="flex items-start gap-3 px-5 py-3 text-[color:var(--pk-text-dim)]"
                   >
                     <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--pk-accent)]" />
-                    {item}
+                    <span className="min-w-0">{item}</span>
                   </li>
                 ))}
               </ul>
@@ -207,7 +215,7 @@ export default function Home() {
         id="cara-kerja"
         className="mx-auto grid w-full max-w-7xl gap-10 px-5 py-20 sm:px-8 lg:grid-cols-[0.7fr_1.3fr]"
       >
-        <div className="pk-inview">
+        <div className="pk-inview min-w-0">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--pk-accent)]">
             Alur penggunaan
           </p>
@@ -223,11 +231,11 @@ export default function Home() {
           {steps.map((step, i) => (
             <li
               key={step.no}
-              className="pk-panel pk-lift pk-inview flex items-start gap-5 p-5 sm:p-6"
+              className="pk-panel pk-lift pk-inview flex items-start gap-4 p-5 sm:gap-5 sm:p-6"
               style={{ animationDelay: `${i * 90}ms` }}
             >
-              <span className="pk-step-no">{step.no}</span>
-              <div>
+              <span className="pk-step-no shrink-0">{step.no}</span>
+              <div className="min-w-0">
                 <h3 className="text-base font-semibold sm:text-lg">
                   {step.title}
                 </h3>
@@ -244,7 +252,7 @@ export default function Home() {
       <section id="harga" className="relative">
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8">
           <div className="pk-inview flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-            <div>
+            <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--pk-accent)]">
                 Pilihan model
               </p>
@@ -299,7 +307,7 @@ export default function Home() {
 
       {/* ============ FAQ ============ */}
       <section className="mx-auto grid w-full max-w-7xl gap-10 px-5 py-20 sm:px-8 lg:grid-cols-2">
-        <div className="pk-inview">
+        <div className="pk-inview min-w-0">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--pk-accent)]">
             FAQ
           </p>
@@ -328,8 +336,8 @@ export default function Home() {
           ].map((item) => (
             <details key={item.q} className="pk-faq group">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-5 text-sm font-semibold transition-colors hover:text-[color:var(--pk-accent)] sm:text-base">
-                {item.q}
-                <span className="pk-faq-icon" aria-hidden>
+                <span className="min-w-0">{item.q}</span>
+                <span className="pk-faq-icon shrink-0" aria-hidden>
                   +
                 </span>
               </summary>
@@ -351,7 +359,7 @@ export default function Home() {
             aria-hidden
             className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_80%_at_50%_120%,rgba(240,169,59,0.22),transparent_70%)]"
           />
-          <h2 className="relative text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
+          <h2 className="relative break-words text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
             Siap kirim request pertama?
           </h2>
           <p className="relative mx-auto mt-4 max-w-lg text-sm leading-6 text-[color:var(--pk-text-dim)]">
@@ -490,7 +498,7 @@ function FeedbackSection() {
     >
       <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr]">
         {/* Kolom kiri: info */}
-        <div className="pk-inview">
+        <div className="pk-inview min-w-0">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--pk-accent)]">
             Suara Anda
           </p>
@@ -514,13 +522,13 @@ function FeedbackSection() {
                   aria-hidden
                   className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--pk-accent)]"
                 />
-                {item}
+                <span className="min-w-0">{item}</span>
               </li>
             ))}
           </ul>
 
           {/* Rating visual */}
-          <div className="mt-8 inline-flex items-center gap-2 rounded-full border border-[color:var(--pk-line-2)] bg-[#0b1626]/60 px-3.5 py-1.5">
+          <div className="mt-8 inline-flex max-w-full items-center gap-2 rounded-full border border-[color:var(--pk-line-2)] bg-[#0b1626]/60 px-3.5 py-1.5">
             <div className="flex items-center gap-0.5">
               {[1, 2, 3, 4, 5].map((n) => (
                 <Star
@@ -530,14 +538,14 @@ function FeedbackSection() {
                 />
               ))}
             </div>
-            <span className="text-[11px] font-medium text-[color:var(--pk-text-dim)]">
+            <span className="truncate text-[11px] font-medium text-[color:var(--pk-text-dim)]">
               Dipercaya pengguna di seluruh Indonesia
             </span>
           </div>
         </div>
 
         {/* Kolom kanan: form */}
-        <div className="pk-panel pk-inview p-6 sm:p-8">
+        <div className="pk-panel pk-inview min-w-0 p-6 sm:p-8">
           {state === "success" ? (
             <div className="flex flex-col items-center py-8 text-center">
               <span className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-[#34d399]/40 bg-[#34d399]/10">
@@ -571,7 +579,7 @@ function FeedbackSection() {
                     className="text-[color:var(--pk-accent)]"
                   />
                 </span>
-                <div>
+                <div className="min-w-0">
                   <h3 className="text-base font-semibold">Kirim Masukan</h3>
                   <p className="mt-0.5 text-[11px] text-[color:var(--pk-text-mute)]">
                     Semua field bertanda{" "}
@@ -585,13 +593,13 @@ function FeedbackSection() {
               {state === "error" && errorMsg && (
                 <div className="flex items-start gap-2.5 rounded-xl border border-[#f87171]/40 bg-[#f87171]/10 px-4 py-3 text-sm text-[#fca5a5]">
                   <AlertCircle size={16} className="mt-0.5 shrink-0" />
-                  <span>{errorMsg}</span>
+                  <span className="min-w-0 break-words">{errorMsg}</span>
                 </div>
               )}
 
               {/* Nama + Email */}
               <div className="grid gap-4 sm:grid-cols-2">
-                <div>
+                <div className="min-w-0">
                   <label className="text-xs font-medium">
                     Nama lengkap{" "}
                     <span className="text-[color:var(--pk-accent)]">*</span>
@@ -606,7 +614,7 @@ function FeedbackSection() {
                     className={`${inputClass} mt-1.5`}
                   />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="text-xs font-medium">
                     Email{" "}
                     <span className="text-[color:var(--pk-accent)]">*</span>
@@ -625,7 +633,7 @@ function FeedbackSection() {
 
               {/* WA + Kategori */}
               <div className="grid gap-4 sm:grid-cols-2">
-                <div>
+                <div className="min-w-0">
                   <label className="text-xs font-medium">
                     Nomor WhatsApp{" "}
                     <span className="text-[color:var(--pk-text-mute)]">
@@ -641,7 +649,7 @@ function FeedbackSection() {
                     className={`${inputClass} mt-1.5`}
                   />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="text-xs font-medium">
                     Jenis masukan{" "}
                     <span className="text-[color:var(--pk-accent)]">*</span>
@@ -681,7 +689,7 @@ function FeedbackSection() {
               </div>
 
               {/* Pesan */}
-              <div>
+              <div className="min-w-0">
                 <label className="text-xs font-medium">
                   Pesan{" "}
                   <span className="text-[color:var(--pk-accent)]">*</span>
@@ -703,11 +711,12 @@ function FeedbackSection() {
               </div>
 
               {/* Attach File */}
-              <div>
+              <div className="min-w-0">
                 <label className="text-xs font-medium">
                   Lampiran{" "}
                   <span className="text-[color:var(--pk-text-mute)]">
-                    (opsional, maks. {MAX_FILES} file, {MAX_FILE_SIZE_MB} MB/file)
+                    (opsional, maks. {MAX_FILES} file, {MAX_FILE_SIZE_MB}{" "}
+                    MB/file)
                   </span>
                 </label>
 
@@ -729,10 +738,12 @@ function FeedbackSection() {
                   disabled={state === "loading" || files.length >= MAX_FILES}
                   className="mt-1.5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[color:var(--pk-line-2)] bg-[#0b1626]/60 px-4 text-sm text-[color:var(--pk-text-dim)] transition-colors hover:border-[color:var(--pk-accent)]/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <Paperclip size={14} />
-                  {files.length >= MAX_FILES
-                    ? "Maksimal file tercapai"
-                    : "Tambah lampiran"}
+                  <Paperclip size={14} className="shrink-0" />
+                  <span className="truncate">
+                    {files.length >= MAX_FILES
+                      ? "Maksimal file tercapai"
+                      : "Tambah lampiran"}
+                  </span>
                 </button>
 
                 {/* File list */}
@@ -740,7 +751,7 @@ function FeedbackSection() {
                   <ul className="mt-3 space-y-1.5">
                     {files.map((f, i) => (
                       <li
-                        key={`${f.name}-${i}`}
+                        key={`${f.name}-${f.size}-${f.lastModified}`}
                         className="flex items-center gap-2 rounded-lg border border-[color:var(--pk-line-2)] bg-[#0b1626] px-3 py-2 text-xs"
                       >
                         <Paperclip
