@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useSupabase } from "@/components/providers/supabase-provider"
 import { useLanguage } from "@/components/providers/language-provider"
+import { PakaiKuotaLogo } from "@/components/brand/pakai-kuota-logo"
 import {
   ArrowLeft,
   BookOpen,
@@ -13,6 +14,7 @@ import {
   Copy,
   FileCode,
   Key,
+  LayoutDashboard,
   Rocket,
   Terminal,
 } from "lucide-react"
@@ -170,7 +172,7 @@ const TAB_LANGS = [
 
 export default function DocsPage() {
   const { t } = useLanguage()
-  const { user } = useSupabase()
+  const { user, loading: userLoading } = useSupabase()
   const [activeTab, setActiveTab] = useState<keyof typeof SNIPPETS>("curl")
   const [copied, setCopied] = useState(false)
   const [activeSection, setActiveSection] = useState("quickstart")
@@ -206,8 +208,17 @@ export default function DocsPage() {
     return () => observer.disconnect()
   }, [])
 
+  /* ============================================================
+     Back link — kondisional:
+     - Sudah login → /dashboard
+     - Belum login → /
+     ============================================================ */
+  const backHref = user ? "/dashboard" : "/"
+  const backLabel = user ? "Kembali ke dashboard" : "Kembali ke halaman utama"
+  const BackIcon = user ? LayoutDashboard : ArrowLeft
+
   return (
-    <div className="relative min-h-screen text-[color:var(--pk-text)]">
+    <div className="relative min-h-screen text-(--pk-text)">
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,#0f1e38_0%,#050b16_55%,#03070e_100%)]" />
         <div className="pk-grid absolute inset-0" />
@@ -218,46 +229,54 @@ export default function DocsPage() {
       </div>
 
       {/* ============ HEADER ============ */}
-      <header className="sticky top-0 z-40 border-b border-[color:var(--pk-line)] bg-[#050b16]/85 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-(--pk-line) bg-[#050b16]/85 backdrop-blur-md">
         <div className="mx-auto flex min-h-16 w-full max-w-7xl items-center justify-between gap-4 px-5 sm:px-8">
           <Link
             href="/"
             className="flex items-center gap-2.5 text-base font-semibold tracking-[-0.02em]"
           >
-            <span className="pk-logo" aria-hidden />
+            <PakaiKuotaLogo size={32} />
             <span className="hidden sm:inline">
-              Pakai<span className="text-[color:var(--pk-accent)]">Kuota</span>
+              Pakai<span className="text-(--pk-accent)">Kuota</span>
             </span>
-            <span className="ml-1 rounded-full border border-[color:var(--pk-line-2)] px-2 py-0.5 text-[10px] font-medium uppercase tracking-widest text-[color:var(--pk-text-mute)]">
+            <span className="ml-1 rounded-full border border-(--pk-line-2) px-2 py-0.5 text-[10px] font-medium uppercase tracking-widest text-(--pk-text-mute)">
               Docs
             </span>
           </Link>
 
           <nav className="flex items-center gap-2 text-sm">
-            {user ? (
+            {/* Auth-aware back button */}
+            {!userLoading && (
+              <Link
+                href={backHref}
+                className="pk-btn-ghost inline-flex min-h-10 items-center gap-2 px-3 text-sm font-medium"
+              >
+                <BackIcon size={14} />
+                <span className="hidden sm:inline">{backLabel}</span>
+                <span className="sm:hidden">
+                  {user ? "Dashboard" : "Kembali"}
+                </span>
+              </Link>
+            )}
+
+            {/* Auth buttons (only when not logged in) */}
+            {!userLoading && !user && (
+              <Link
+                href="/signup"
+                className="pk-btn-primary inline-flex min-h-10 items-center px-4 text-sm"
+              >
+                Buat akun
+              </Link>
+            )}
+
+            {/* When logged in, show a secondary shortcut to dashboard if needed */}
+            {!userLoading && user && (
               <Link
                 href="/dashboard"
-                className="pk-btn-primary inline-flex min-h-10 items-center gap-2 px-4 text-sm"
+                className="hidden min-h-10 items-center px-3 text-(--pk-text-dim) transition-colors hover:text-white sm:flex"
               >
-                <ArrowLeft size={14} />
-                <span className="hidden sm:inline">Kembali ke dashboard</span>
-                <span className="sm:hidden">Dashboard</span>
+                Buka dashboard
               </Link>
-            ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="hidden min-h-10 items-center px-3 text-[color:var(--pk-text-dim)] transition-colors hover:text-white sm:flex"
-                >
-                  Masuk
-                </Link>
-                <Link
-                  href="/signup"
-                  className="pk-btn-primary inline-flex min-h-10 items-center px-4 text-sm"
-                >
-                  Buat akun
-                </Link>
-              </>
             )}
           </nav>
         </div>
@@ -270,7 +289,7 @@ export default function DocsPage() {
             aria-label="Navigasi dokumentasi"
             className="sticky top-24 space-y-1"
           >
-            <p className="px-3 pb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[color:var(--pk-text-mute)]">
+            <p className="px-3 pb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-(--pk-text-mute)">
               Daftar isi
             </p>
             {SECTIONS.map((section) => {
@@ -281,24 +300,22 @@ export default function DocsPage() {
                   href={`#${section.id}`}
                   className={`group flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-all duration-200 ${
                     active
-                      ? "bg-white/5 text-[color:var(--pk-text)]"
-                      : "text-[color:var(--pk-text-dim)] hover:bg-white/[0.02] hover:text-white"
+                      ? "bg-white/5 text-(--pk-text)"
+                      : "text-(--pk-text-dim) hover:bg-white/2 hover:text-white"
                   }`}
                 >
                   <span className="flex items-center gap-2.5">
                     <span
                       aria-hidden
                       className={`h-1 w-1 rounded-full transition-colors ${
-                        active
-                          ? "bg-[color:var(--pk-accent)]"
-                          : "bg-transparent"
+                        active ? "bg-(--pk-accent)" : "bg-transparent"
                       }`}
                     />
                     {section.label}
                   </span>
                   <ChevronRight
                     size={12}
-                    className={`text-[color:var(--pk-text-mute)] transition-transform duration-200 ${
+                    className={`text-(--pk-text-mute) transition-transform duration-200 ${
                       active
                         ? "translate-x-0 opacity-100"
                         : "-translate-x-1 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"
@@ -308,16 +325,16 @@ export default function DocsPage() {
               )
             })}
 
-            <div className="mt-8 rounded-xl border border-[color:var(--pk-line)] bg-[#0b1626]/60 p-4">
-              <p className="text-xs font-semibold text-[color:var(--pk-text)]">
+            <div className="mt-8 rounded-xl border border-(--pk-line) bg-[#0b1626]/60 p-4">
+              <p className="text-xs font-semibold text-(--pk-text)">
                 Butuh bantuan?
               </p>
-              <p className="mt-1 text-[11px] leading-5 text-[color:var(--pk-text-mute)]">
+              <p className="mt-1 text-[11px] leading-5 text-(--pk-text-mute)">
                 Tim support siap membantu via WhatsApp.
               </p>
               <Link
                 href="/dashboard"
-                className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[color:var(--pk-accent)] hover:underline"
+                className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-(--pk-accent) hover:underline"
               >
                 Buka dashboard →
               </Link>
@@ -335,8 +352,8 @@ export default function DocsPage() {
                 href={`#${section.id}`}
                 className={`whitespace-nowrap rounded-lg border px-3 py-2 text-xs font-medium transition-all ${
                   active
-                    ? "border-[color:var(--pk-accent)]/40 bg-[color:var(--pk-accent)]/10 text-[color:var(--pk-accent)]"
-                    : "border-[color:var(--pk-line-2)] bg-[#0b1626] text-[color:var(--pk-text-dim)]"
+                    ? "border-(--pk-accent)/40 bg-(--pk-accent)/10 text-(--pk-accent)"
+                    : "border-(--pk-line-2) bg-[#0b1626] text-(--pk-text-dim)"
                 }`}
               >
                 {section.label}
@@ -349,13 +366,13 @@ export default function DocsPage() {
         <div ref={contentRef} className="min-w-0 space-y-6">
           {/* Hero */}
           <section className="pk-panel pk-inview p-6 sm:p-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--pk-accent)]">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-(--pk-accent)">
               Dokumentasi
             </p>
             <h1 className="mt-3 text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
               Panduan API PakaiKuota
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-[color:var(--pk-text-dim)]">
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-(--pk-text-dim)">
               Quickstart guide dan contoh code untuk mengintegrasikan API
               PakaiKuota ke aplikasi kamu. Endpoint chat completions yang
               kompatibel dengan format OpenAI.
@@ -365,10 +382,10 @@ export default function DocsPage() {
                 <span className="h-1.5 w-1.5 rounded-full bg-[#34d399]" />
                 OpenAI-compatible
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--pk-line-2)] bg-[#0b1626] px-2.5 py-1 text-[color:var(--pk-text-dim)]">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-(--pk-line-2) bg-[#0b1626] px-2.5 py-1 text-(--pk-text-dim)">
                 Streaming
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--pk-line-2)] bg-[#0b1626] px-2.5 py-1 text-[color:var(--pk-text-dim)]">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-(--pk-line-2) bg-[#0b1626] px-2.5 py-1 text-(--pk-text-dim)">
                 Bayar per token
               </span>
             </div>
@@ -377,12 +394,12 @@ export default function DocsPage() {
           {/* Quickstart */}
           <section id="quickstart" className="pk-panel pk-inview p-6 sm:p-8">
             <div className="flex items-center gap-2">
-              <Rocket size={16} className="text-[color:var(--pk-accent)]" />
+              <Rocket size={16} className="text-(--pk-accent)" />
               <h2 className="text-lg font-semibold tracking-[-0.02em]">
                 Mulai Cepat
               </h2>
             </div>
-            <p className="mt-1 text-sm text-[color:var(--pk-text-dim)]">
+            <p className="mt-1 text-sm text-(--pk-text-dim)">
               4 langkah untuk mulai menggunakan API.
             </p>
 
@@ -392,13 +409,13 @@ export default function DocsPage() {
                 return (
                   <div
                     key={i}
-                    className="pk-lift flex flex-col rounded-xl border border-[color:var(--pk-line)] bg-[#0b1626]/60 p-4"
+                    className="pk-lift flex flex-col rounded-xl border border-(--pk-line) bg-[#0b1626]/60 p-4"
                   >
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-[color:var(--pk-line-2)] bg-[#0b1626] text-[color:var(--pk-accent)]">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-(--pk-line-2) bg-[#0b1626] text-(--pk-accent)">
                       <Icon size={16} />
                     </span>
                     <h3 className="mt-4 text-sm font-semibold">{step.title}</h3>
-                    <p className="mt-1.5 text-xs leading-5 text-[color:var(--pk-text-dim)]">
+                    <p className="mt-1.5 text-xs leading-5 text-(--pk-text-dim)">
                       {step.description}
                     </p>
                   </div>
@@ -412,7 +429,7 @@ export default function DocsPage() {
             <h2 className="text-lg font-semibold tracking-[-0.02em]">
               Setup API
             </h2>
-            <p className="mt-1 text-sm text-[color:var(--pk-text-dim)]">
+            <p className="mt-1 text-sm text-(--pk-text-dim)">
               Konfigurasi yang perlu disiapkan sebelum request pertama.
             </p>
 
@@ -429,44 +446,42 @@ export default function DocsPage() {
                 </>,
                 <>
                   Gunakan slug model yang tersedia. Model gratis saat ini:{" "}
-                  <code className="rounded-md border border-[color:var(--pk-line-2)] bg-[#0b1626] px-1.5 py-0.5 font-mono text-xs text-[color:var(--pk-accent)]">
+                  <code className="rounded-md border border-(--pk-line-2) bg-[#0b1626] px-1.5 py-0.5 font-mono text-xs text-(--pk-accent)">
                     nvidia-nemotron-3-ultra-550b-a55bfree
                   </code>
                   .
                 </>,
               ].map((item, i) => (
                 <li key={i} className="flex items-start gap-3">
-                  <span className="pk-step-no flex-shrink-0">{`0${i + 1}`}</span>
-                  <span className="pt-2 text-[color:var(--pk-text-dim)]">
-                    {item}
-                  </span>
+                  <span className="pk-step-no shrink-0">{`0${i + 1}`}</span>
+                  <span className="pt-2 text-(--pk-text-dim)">{item}</span>
                 </li>
               ))}
             </ol>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl border border-[color:var(--pk-line)] bg-[#0b1626]/60 p-4">
-                <p className="text-xs font-semibold uppercase tracking-widest text-[color:var(--pk-text-mute)]">
+              <div className="rounded-xl border border-(--pk-line) bg-[#0b1626]/60 p-4">
+                <p className="text-xs font-semibold uppercase tracking-widest text-(--pk-text-mute)">
                   Endpoint
                 </p>
-                <code className="mt-2 block break-all font-mono text-sm text-[color:var(--pk-text)]">
+                <code className="mt-2 block break-all font-mono text-sm text-(--pk-text)">
                   POST /api/v1/chat/completions
                 </code>
-                <p className="mt-3 text-[11px] text-[color:var(--pk-text-mute)]">
+                <p className="mt-3 text-[11px] text-(--pk-text-mute)">
                   Production:
                 </p>
-                <code className="mt-1 block break-all font-mono text-[11px] text-[color:var(--pk-text-dim)]">
+                <code className="mt-1 block break-all font-mono text-[11px] text-(--pk-text-dim)">
                   https://pakai-kuota.vercel.app/api/v1/chat/completions
                 </code>
               </div>
-              <div className="rounded-xl border border-[color:var(--pk-line)] bg-[#0b1626]/60 p-4">
-                <p className="text-xs font-semibold uppercase tracking-widest text-[color:var(--pk-text-mute)]">
+              <div className="rounded-xl border border-(--pk-line) bg-[#0b1626]/60 p-4">
+                <p className="text-xs font-semibold uppercase tracking-widest text-(--pk-text-mute)">
                   Daftar model
                 </p>
-                <code className="mt-2 block font-mono text-sm text-[color:var(--pk-text)]">
+                <code className="mt-2 block font-mono text-sm text-(--pk-text)">
                   GET /api/v1/models
                 </code>
-                <p className="mt-3 text-[11px] leading-5 text-[color:var(--pk-text-dim)]">
+                <p className="mt-3 text-[11px] leading-5 text-(--pk-text-dim)">
                   Dengan header API key. Hanya model yang diaktifkan admin yang
                   ditampilkan.
                 </p>
@@ -479,49 +494,49 @@ export default function DocsPage() {
             <h2 className="text-lg font-semibold tracking-[-0.02em]">
               Format Request
             </h2>
-            <p className="mt-1 text-sm text-[color:var(--pk-text-dim)]">
+            <p className="mt-1 text-sm text-(--pk-text-dim)">
               Parameter yang didukung endpoint chat completion.
             </p>
 
-            <ul className="mt-6 space-y-3 text-sm leading-6 text-[color:var(--pk-text-dim)]">
+            <ul className="mt-6 space-y-3 text-sm leading-6 text-(--pk-text-dim)">
               {[
                 <>
-                  <code className="rounded-md border border-[color:var(--pk-line-2)] bg-[#0b1626] px-1.5 py-0.5 font-mono text-xs text-[color:var(--pk-accent)]">
+                  <code className="rounded-md border border-(--pk-line-2) bg-[#0b1626] px-1.5 py-0.5 font-mono text-xs text-(--pk-accent)">
                     model
                   </code>{" "}
                   wajib: slug dari daftar model.
                 </>,
                 <>
-                  <code className="rounded-md border border-[color:var(--pk-line-2)] bg-[#0b1626] px-1.5 py-0.5 font-mono text-xs text-[color:var(--pk-accent)]">
+                  <code className="rounded-md border border-(--pk-line-2) bg-[#0b1626] px-1.5 py-0.5 font-mono text-xs text-(--pk-accent)">
                     messages
                   </code>{" "}
                   wajib: array berisi{" "}
-                  <code className="font-mono text-xs text-[color:var(--pk-text)]">
+                  <code className="font-mono text-xs text-(--pk-text)">
                     role
                   </code>{" "}
                   dan{" "}
-                  <code className="font-mono text-xs text-[color:var(--pk-text)]">
+                  <code className="font-mono text-xs text-(--pk-text)">
                     content
                   </code>
                   .
                 </>,
                 <>
-                  <code className="rounded-md border border-[color:var(--pk-line-2)] bg-[#0b1626] px-1.5 py-0.5 font-mono text-xs text-[color:var(--pk-accent)]">
+                  <code className="rounded-md border border-(--pk-line-2) bg-[#0b1626] px-1.5 py-0.5 font-mono text-xs text-(--pk-accent)">
                     max_tokens
                   </code>{" "}
                   opsional: integer 1–4096. Gunakan nilai kecil untuk membatasi
                   biaya.
                 </>,
                 <>
-                  <code className="rounded-md border border-[color:var(--pk-line-2)] bg-[#0b1626] px-1.5 py-0.5 font-mono text-xs text-[color:var(--pk-accent)]">
+                  <code className="rounded-md border border-(--pk-line-2) bg-[#0b1626] px-1.5 py-0.5 font-mono text-xs text-(--pk-accent)">
                     stream
                   </code>
                   ,{" "}
-                  <code className="rounded-md border border-[color:var(--pk-line-2)] bg-[#0b1626] px-1.5 py-0.5 font-mono text-xs text-[color:var(--pk-accent)]">
+                  <code className="rounded-md border border-(--pk-line-2) bg-[#0b1626] px-1.5 py-0.5 font-mono text-xs text-(--pk-accent)">
                     temperature
                   </code>
                   , dan{" "}
-                  <code className="rounded-md border border-[color:var(--pk-line-2)] bg-[#0b1626] px-1.5 py-0.5 font-mono text-xs text-[color:var(--pk-accent)]">
+                  <code className="rounded-md border border-(--pk-line-2) bg-[#0b1626] px-1.5 py-0.5 font-mono text-xs text-(--pk-accent)">
                     top_p
                   </code>{" "}
                   opsional.
@@ -532,13 +547,13 @@ export default function DocsPage() {
                 </>,
               ].map((item, i) => (
                 <li key={i} className="flex items-start gap-3">
-                  <span className="mt-2.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[color:var(--pk-accent)]" />
+                  <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-(--pk-accent)" />
                   <span>{item}</span>
                 </li>
               ))}
             </ul>
 
-            <p className="mt-6 rounded-xl border border-[color:var(--pk-line)] bg-[#0b1626]/60 p-4 text-sm leading-6 text-[color:var(--pk-text-dim)]">
+            <p className="mt-6 rounded-xl border border-(--pk-line) bg-[#0b1626]/60 p-4 text-sm leading-6 text-(--pk-text-dim)">
               Billing memakai harga model, markup, kurs USD/IDR, dan token
               aktual dari provider jika tersedia. Request gagal tidak
               seharusnya memotong saldo.
@@ -550,7 +565,7 @@ export default function DocsPage() {
             <h2 className="text-lg font-semibold tracking-[-0.02em]">
               Error Umum
             </h2>
-            <p className="mt-1 text-sm text-[color:var(--pk-text-dim)]">
+            <p className="mt-1 text-sm text-(--pk-text-dim)">
               Kode error yang mungkin kamu temui dan solusinya.
             </p>
 
@@ -584,20 +599,18 @@ export default function DocsPage() {
               ].map((item) => (
                 <div
                   key={item.code}
-                  className="flex flex-col gap-1.5 rounded-xl border border-[color:var(--pk-line)] bg-[#0b1626]/60 px-4 py-3 sm:flex-row sm:items-center sm:gap-4"
+                  className="flex flex-col gap-1.5 rounded-xl border border-(--pk-line) bg-[#0b1626]/60 px-4 py-3 sm:flex-row sm:items-center sm:gap-4"
                 >
                   <code
-                    className={`flex-shrink-0 rounded-md border px-2 py-1 font-mono text-xs ${
+                    className={`shrink-0 rounded-md border px-2 py-1 font-mono text-xs ${
                       item.tone === "err"
                         ? "border-[#f87171]/30 bg-[#f87171]/10 text-[#fca5a5]"
-                        : "border-[color:var(--pk-accent)]/30 bg-[color:var(--pk-accent)]/10 text-[color:var(--pk-accent)]"
+                        : "border-(--pk-accent)/30 bg-(--pk-accent)/10 text-(--pk-accent)"
                     }`}
                   >
                     {item.code}
                   </code>
-                  <p className="text-sm text-[color:var(--pk-text-dim)]">
-                    {item.desc}
-                  </p>
+                  <p className="text-sm text-(--pk-text-dim)">{item.desc}</p>
                 </div>
               ))}
             </div>
@@ -608,12 +621,12 @@ export default function DocsPage() {
             <h2 className="text-lg font-semibold tracking-[-0.02em]">
               Contoh Code
             </h2>
-            <p className="mt-1 text-sm text-[color:var(--pk-text-dim)]">
+            <p className="mt-1 text-sm text-(--pk-text-dim)">
               Copy-paste ready untuk berbagai bahasa pemrograman.
             </p>
 
-            <div className="mt-6 overflow-hidden rounded-xl border border-[color:var(--pk-line)]">
-              <div className="pk-scroll flex items-center gap-1 overflow-x-auto border-b border-[color:var(--pk-line)] bg-[#0b1626]/80 p-1.5">
+            <div className="mt-6 overflow-hidden rounded-xl border border-(--pk-line)">
+              <div className="pk-scroll flex items-center gap-1 overflow-x-auto border-b border-(--pk-line) bg-[#0b1626]/80 p-1.5">
                 {TAB_LANGS.map((tab) => {
                   const active = activeTab === tab.id
                   const Icon = tab.icon
@@ -628,8 +641,8 @@ export default function DocsPage() {
                       role="tab"
                       className={`inline-flex min-h-9 items-center gap-2 whitespace-nowrap rounded-lg px-3 text-xs font-medium transition-all ${
                         active
-                          ? "bg-gradient-to-r from-[#ffc266] to-[#f0a93b] text-[#10192b] shadow-[0_6px_18px_-8px_rgba(240,169,59,0.9)]"
-                          : "text-[color:var(--pk-text-dim)] hover:text-white"
+                          ? "bg-linear-to-r from-[#ffc266] to-[#f0a93b] text-[#10192b] shadow-[0_6px_18px_-8px_rgba(240,169,59,0.9)]"
+                          : "text-(--pk-text-dim) hover:text-white"
                       }`}
                     >
                       {Icon ? <Icon size={12} /> : null}
@@ -645,7 +658,7 @@ export default function DocsPage() {
                   className={`ml-auto inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition-all ${
                     copied
                       ? "border-[#34d399]/50 bg-[#34d399]/15 text-[#6ee7b7]"
-                      : "border-[color:var(--pk-line-2)] bg-[#0b1626] text-[color:var(--pk-text-mute)] hover:border-[color:var(--pk-accent)]/50 hover:text-[color:var(--pk-accent)]"
+                      : "border-(--pk-line-2) bg-[#0b1626] text-(--pk-text-mute) hover:border-(--pk-accent)/50 hover:text-(--pk-accent)"
                   }`}
                 >
                   {copied ? <Check size={12} /> : <Copy size={12} />}
@@ -655,7 +668,7 @@ export default function DocsPage() {
                 </button>
               </div>
 
-              <pre className="pk-scroll pk-terminal overflow-x-auto p-5 font-mono text-[12.5px] leading-6 text-[color:var(--pk-text)]">
+              <pre className="pk-scroll pk-terminal overflow-x-auto p-5 font-mono text-[12.5px] leading-6 text-(--pk-text)">
                 <code>{code}</code>
               </pre>
             </div>
@@ -666,7 +679,7 @@ export default function DocsPage() {
             <h2 className="text-lg font-semibold tracking-[-0.02em]">
               Model yang Tersedia
             </h2>
-            <p className="mt-1 text-sm text-[color:var(--pk-text-dim)]">
+            <p className="mt-1 text-sm text-(--pk-text-dim)">
               Daftar model yang dapat diakses via API.
             </p>
 
@@ -674,31 +687,31 @@ export default function DocsPage() {
               {MODELS.map((model) => (
                 <div
                   key={model.name}
-                  className="pk-lift flex flex-col gap-4 rounded-xl border border-[color:var(--pk-line)] bg-[#0b1626]/60 p-4 sm:flex-row sm:items-center sm:justify-between"
+                  className="pk-lift flex flex-col gap-4 rounded-xl border border-(--pk-line) bg-[#0b1626]/60 p-4 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="flex min-w-0 items-center gap-4">
-                    <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-[color:var(--pk-line-2)] bg-[#0b1626] text-[color:var(--pk-accent)]">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-(--pk-line-2) bg-[#0b1626] text-(--pk-accent)">
                       <Code2 size={16} />
                     </span>
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <code className="truncate font-mono text-sm font-medium text-[color:var(--pk-text)]">
+                        <code className="truncate font-mono text-sm font-medium text-(--pk-text)">
                           {model.name}
                         </code>
                         <span className="inline-flex items-center gap-1.5 rounded-full border border-[#34d399]/30 bg-[#34d399]/10 px-2 py-0.5 text-[10px] font-medium text-[#6ee7b7]">
                           {model.tier}
                         </span>
                       </div>
-                      <p className="mt-1 text-xs text-[color:var(--pk-text-dim)]">
+                      <p className="mt-1 text-xs text-(--pk-text-dim)">
                         {model.description}
                       </p>
                     </div>
                   </div>
-                  <div className="text-right sm:flex-shrink-0">
-                    <p className="font-mono text-base font-semibold text-[color:var(--pk-accent)]">
+                  <div className="text-right sm:shrink-0">
+                    <p className="font-mono text-base font-semibold text-(--pk-accent)">
                       {model.price}
                     </p>
-                    <p className="text-[10px] uppercase tracking-widest text-[color:var(--pk-text-mute)]">
+                    <p className="text-[10px] uppercase tracking-widest text-(--pk-text-mute)">
                       per 1M tokens
                     </p>
                   </div>
@@ -706,11 +719,11 @@ export default function DocsPage() {
               ))}
             </div>
 
-            <p className="mt-6 text-center text-sm text-[color:var(--pk-text-dim)]">
+            <p className="mt-6 text-center text-sm text-(--pk-text-dim)">
               Lihat semua model di{" "}
               <Link
                 href="/#harga"
-                className="font-medium text-[color:var(--pk-accent)] hover:underline"
+                className="font-medium text-(--pk-accent) hover:underline"
               >
                 halaman harga
               </Link>
@@ -727,7 +740,7 @@ export default function DocsPage() {
               <h2 className="text-2xl font-semibold tracking-[-0.03em] sm:text-3xl">
                 Siap mulai?
               </h2>
-              <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[color:var(--pk-text-dim)]">
+              <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-(--pk-text-dim)">
                 Buat akun, isi kuota, dan kirim request pertama kamu dalam
                 hitungan menit.
               </p>
@@ -737,7 +750,7 @@ export default function DocsPage() {
                     href="/dashboard"
                     className="pk-btn-primary inline-flex min-h-11 items-center justify-center gap-2 px-5 text-sm"
                   >
-                    <ArrowLeft size={14} />
+                    <LayoutDashboard size={14} />
                     Kembali ke dashboard
                   </Link>
                 ) : (
