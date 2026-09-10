@@ -1,23 +1,21 @@
 "use client"
 
-import { useState } from "react"
+import Link from "next/link"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { useSupabase } from "@/components/providers/supabase-provider"
 import { useLanguage } from "@/components/providers/language-provider"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { Container, Grid, PageHeader } from "@/components/layout"
 import {
-  Code2,
-  Terminal,
-  Copy,
-  Check,
-  Rocket,
+  ArrowLeft,
   BookOpen,
-  Key,
+  Check,
+  ChevronRight,
+  Code2,
+  Copy,
   FileCode,
+  Key,
+  Rocket,
+  Terminal,
 } from "lucide-react"
-import { cn } from "@/lib/cn"
 
 const SNIPPETS = {
   curl: `curl https://pakai-kuota.vercel.app/api/v1/chat/completions \\
@@ -119,11 +117,15 @@ curl_close($ch);
 
 $result = json_decode($response, true);
 print_r($result);`,
-
 }
 
 const MODELS = [
-  { name: "nvidia-nemotron-3-ultra-550b-a55bfree", description: "Model gratis yang sudah terhubung ke gateway", tier: "Gratis", price: "Rp 0" },
+  {
+    name: "nvidia-nemotron-3-ultra-550b-a55bfree",
+    description: "Model gratis yang sudah terhubung ke gateway",
+    tier: "Gratis",
+    price: "Rp 0",
+  },
 ]
 
 const STEPS = [
@@ -149,207 +151,616 @@ const STEPS = [
   },
 ]
 
+const SECTIONS = [
+  { id: "quickstart", label: "Mulai Cepat" },
+  { id: "setup", label: "Setup API" },
+  { id: "format", label: "Format Request" },
+  { id: "errors", label: "Error Umum" },
+  { id: "examples", label: "Contoh Code" },
+  { id: "models", label: "Model Tersedia" },
+]
+
+const TAB_LANGS = [
+  { id: "curl", label: "cURL", icon: Terminal },
+  { id: "python", label: "Python" },
+  { id: "node", label: "Node.js" },
+  { id: "go", label: "Go" },
+  { id: "php", label: "PHP" },
+]
+
 export default function DocsPage() {
   const { t } = useLanguage()
-  const [activeTab, setActiveTab] = useState("curl")
+  const { user } = useSupabase()
+  const [activeTab, setActiveTab] = useState<keyof typeof SNIPPETS>("curl")
   const [copied, setCopied] = useState(false)
+  const [activeSection, setActiveSection] = useState("quickstart")
+  const contentRef = useRef<HTMLDivElement | null>(null)
 
-  const copyToClipboard = async () => {
-    await navigator.clipboard.writeText(SNIPPETS[activeTab as keyof typeof SNIPPETS])
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+  const code = useMemo(() => SNIPPETS[activeTab], [activeTab])
+
+  async function copyToClipboard() {
+    try {
+      await navigator.clipboard.writeText(code)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1800)
+    } catch {
+      setCopied(false)
+    }
   }
 
-  return (
-    <Container>
-      <PageHeader
-        title="Dokumentasi API"
-        description="Quickstart guide dan contoh code untuk integrate API PakaiKuota"
-      />
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id)
+          }
+        })
+      },
+      { rootMargin: "-25% 0px -65% 0px", threshold: 0 }
+    )
+    SECTIONS.forEach((s) => {
+      const el = document.getElementById(s.id)
+      if (el) observer.observe(el)
+    })
+    return () => observer.disconnect()
+  }, [])
 
-      {/* Quickstart Steps */}
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle className="text-lg">Mulai Cepat</CardTitle>
-          <CardDescription>
-            4 langkah untuk mulai menggunakan API
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Grid cols={4} gap="sm">
-            {STEPS.map((step, index) => (
-              <div key={index} className="flex flex-col items-center text-center p-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-brand)]/10 mb-3">
-                  <step.icon className="h-6 w-6 text-[var(--color-brand)]" />
-                </div>
-                <h3 className="font-medium mb-1">{step.title}</h3>
-                <p className="text-sm text-[var(--color-muted-foreground)]">
-                  {step.description}
+  return (
+    <div className="relative min-h-screen text-[color:var(--pk-text)]">
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,#0f1e38_0%,#050b16_55%,#03070e_100%)]" />
+        <div className="pk-grid absolute inset-0" />
+        <div className="pk-aurora">
+          <span />
+          <span />
+        </div>
+      </div>
+
+      {/* ============ HEADER ============ */}
+      <header className="sticky top-0 z-40 border-b border-[color:var(--pk-line)] bg-[#050b16]/85 backdrop-blur-md">
+        <div className="mx-auto flex min-h-16 w-full max-w-7xl items-center justify-between gap-4 px-5 sm:px-8">
+          <Link
+            href="/"
+            className="flex items-center gap-2.5 text-base font-semibold tracking-[-0.02em]"
+          >
+            <span className="pk-logo" aria-hidden />
+            <span className="hidden sm:inline">
+              Pakai<span className="text-[color:var(--pk-accent)]">Kuota</span>
+            </span>
+            <span className="ml-1 rounded-full border border-[color:var(--pk-line-2)] px-2 py-0.5 text-[10px] font-medium uppercase tracking-widest text-[color:var(--pk-text-mute)]">
+              Docs
+            </span>
+          </Link>
+
+          <nav className="flex items-center gap-2 text-sm">
+            {user ? (
+              <Link
+                href="/dashboard"
+                className="pk-btn-primary inline-flex min-h-10 items-center gap-2 px-4 text-sm"
+              >
+                <ArrowLeft size={14} />
+                <span className="hidden sm:inline">Kembali ke dashboard</span>
+                <span className="sm:hidden">Dashboard</span>
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="hidden min-h-10 items-center px-3 text-[color:var(--pk-text-dim)] transition-colors hover:text-white sm:flex"
+                >
+                  Masuk
+                </Link>
+                <Link
+                  href="/signup"
+                  className="pk-btn-primary inline-flex min-h-10 items-center px-4 text-sm"
+                >
+                  Buat akun
+                </Link>
+              </>
+            )}
+          </nav>
+        </div>
+      </header>
+
+      <div className="mx-auto grid w-full max-w-7xl gap-10 px-5 py-10 sm:px-8 lg:grid-cols-[14rem_1fr]">
+        {/* ============ SIDEBAR ============ */}
+        <aside className="hidden lg:block">
+          <nav
+            aria-label="Navigasi dokumentasi"
+            className="sticky top-24 space-y-1"
+          >
+            <p className="px-3 pb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[color:var(--pk-text-mute)]">
+              Daftar isi
+            </p>
+            {SECTIONS.map((section) => {
+              const active = activeSection === section.id
+              return (
+                <a
+                  key={section.id}
+                  href={`#${section.id}`}
+                  className={`group flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-all duration-200 ${
+                    active
+                      ? "bg-white/5 text-[color:var(--pk-text)]"
+                      : "text-[color:var(--pk-text-dim)] hover:bg-white/[0.02] hover:text-white"
+                  }`}
+                >
+                  <span className="flex items-center gap-2.5">
+                    <span
+                      aria-hidden
+                      className={`h-1 w-1 rounded-full transition-colors ${
+                        active
+                          ? "bg-[color:var(--pk-accent)]"
+                          : "bg-transparent"
+                      }`}
+                    />
+                    {section.label}
+                  </span>
+                  <ChevronRight
+                    size={12}
+                    className={`text-[color:var(--pk-text-mute)] transition-transform duration-200 ${
+                      active
+                        ? "translate-x-0 opacity-100"
+                        : "-translate-x-1 opacity-0 group-hover:translate-x-0 group-hover:opacity-100"
+                    }`}
+                  />
+                </a>
+              )
+            })}
+
+            <div className="mt-8 rounded-xl border border-[color:var(--pk-line)] bg-[#0b1626]/60 p-4">
+              <p className="text-xs font-semibold text-[color:var(--pk-text)]">
+                Butuh bantuan?
+              </p>
+              <p className="mt-1 text-[11px] leading-5 text-[color:var(--pk-text-mute)]">
+                Tim support siap membantu via WhatsApp.
+              </p>
+              <Link
+                href="/dashboard"
+                className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-[color:var(--pk-accent)] hover:underline"
+              >
+                Buka dashboard →
+              </Link>
+            </div>
+          </nav>
+        </aside>
+
+        {/* ============ MOBILE TOC ============ */}
+        <div className="pk-scroll -mx-5 flex gap-2 overflow-x-auto px-5 pb-1 lg:hidden">
+          {SECTIONS.map((section) => {
+            const active = activeSection === section.id
+            return (
+              <a
+                key={section.id}
+                href={`#${section.id}`}
+                className={`whitespace-nowrap rounded-lg border px-3 py-2 text-xs font-medium transition-all ${
+                  active
+                    ? "border-[color:var(--pk-accent)]/40 bg-[color:var(--pk-accent)]/10 text-[color:var(--pk-accent)]"
+                    : "border-[color:var(--pk-line-2)] bg-[#0b1626] text-[color:var(--pk-text-dim)]"
+                }`}
+              >
+                {section.label}
+              </a>
+            )
+          })}
+        </div>
+
+        {/* ============ CONTENT ============ */}
+        <div ref={contentRef} className="min-w-0 space-y-6">
+          {/* Hero */}
+          <section className="pk-panel pk-inview p-6 sm:p-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--pk-accent)]">
+              Dokumentasi
+            </p>
+            <h1 className="mt-3 text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
+              Panduan API PakaiKuota
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[color:var(--pk-text-dim)]">
+              Quickstart guide dan contoh code untuk mengintegrasikan API
+              PakaiKuota ke aplikasi kamu. Endpoint chat completions yang
+              kompatibel dengan format OpenAI.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-2 text-xs">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#34d399]/30 bg-[#34d399]/10 px-2.5 py-1 text-[#6ee7b7]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#34d399]" />
+                OpenAI-compatible
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--pk-line-2)] bg-[#0b1626] px-2.5 py-1 text-[color:var(--pk-text-dim)]">
+                Streaming
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--pk-line-2)] bg-[#0b1626] px-2.5 py-1 text-[color:var(--pk-text-dim)]">
+                Bayar per token
+              </span>
+            </div>
+          </section>
+
+          {/* Quickstart */}
+          <section id="quickstart" className="pk-panel pk-inview p-6 sm:p-8">
+            <div className="flex items-center gap-2">
+              <Rocket size={16} className="text-[color:var(--pk-accent)]" />
+              <h2 className="text-lg font-semibold tracking-[-0.02em]">
+                Mulai Cepat
+              </h2>
+            </div>
+            <p className="mt-1 text-sm text-[color:var(--pk-text-dim)]">
+              4 langkah untuk mulai menggunakan API.
+            </p>
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {STEPS.map((step, i) => {
+                const Icon = step.icon
+                return (
+                  <div
+                    key={i}
+                    className="pk-lift flex flex-col rounded-xl border border-[color:var(--pk-line)] bg-[#0b1626]/60 p-4"
+                  >
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-[color:var(--pk-line-2)] bg-[#0b1626] text-[color:var(--pk-accent)]">
+                      <Icon size={16} />
+                    </span>
+                    <h3 className="mt-4 text-sm font-semibold">{step.title}</h3>
+                    <p className="mt-1.5 text-xs leading-5 text-[color:var(--pk-text-dim)]">
+                      {step.description}
+                    </p>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+
+          {/* Setup */}
+          <section id="setup" className="pk-panel pk-inview p-6 sm:p-8">
+            <h2 className="text-lg font-semibold tracking-[-0.02em]">
+              Setup API
+            </h2>
+            <p className="mt-1 text-sm text-[color:var(--pk-text-dim)]">
+              Konfigurasi yang perlu disiapkan sebelum request pertama.
+            </p>
+
+            <ol className="mt-6 space-y-3 text-sm leading-6">
+              {[
+                <>Daftar atau masuk ke akun PakaiKuota.</>,
+                <>
+                  Buka Dashboard → API Keys, buat key baru, lalu simpan
+                  plaintext key. Key hanya ditampilkan saat dibuat.
+                </>,
+                <>
+                  Pastikan saldo tersedia. Request pay-per-use akan memotong
+                  saldo Rupiah setelah provider berhasil merespons.
+                </>,
+                <>
+                  Gunakan slug model yang tersedia. Model gratis saat ini:{" "}
+                  <code className="rounded-md border border-[color:var(--pk-line-2)] bg-[#0b1626] px-1.5 py-0.5 font-mono text-xs text-[color:var(--pk-accent)]">
+                    nvidia-nemotron-3-ultra-550b-a55bfree
+                  </code>
+                  .
+                </>,
+              ].map((item, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <span className="pk-step-no flex-shrink-0">{`0${i + 1}`}</span>
+                  <span className="pt-2 text-[color:var(--pk-text-dim)]">
+                    {item}
+                  </span>
+                </li>
+              ))}
+            </ol>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-[color:var(--pk-line)] bg-[#0b1626]/60 p-4">
+                <p className="text-xs font-semibold uppercase tracking-widest text-[color:var(--pk-text-mute)]">
+                  Endpoint
+                </p>
+                <code className="mt-2 block break-all font-mono text-sm text-[color:var(--pk-text)]">
+                  POST /api/v1/chat/completions
+                </code>
+                <p className="mt-3 text-[11px] text-[color:var(--pk-text-mute)]">
+                  Production:
+                </p>
+                <code className="mt-1 block break-all font-mono text-[11px] text-[color:var(--pk-text-dim)]">
+                  https://pakai-kuota.vercel.app/api/v1/chat/completions
+                </code>
+              </div>
+              <div className="rounded-xl border border-[color:var(--pk-line)] bg-[#0b1626]/60 p-4">
+                <p className="text-xs font-semibold uppercase tracking-widest text-[color:var(--pk-text-mute)]">
+                  Daftar model
+                </p>
+                <code className="mt-2 block font-mono text-sm text-[color:var(--pk-text)]">
+                  GET /api/v1/models
+                </code>
+                <p className="mt-3 text-[11px] leading-5 text-[color:var(--pk-text-dim)]">
+                  Dengan header API key. Hanya model yang diaktifkan admin yang
+                  ditampilkan.
                 </p>
               </div>
-            ))}
-          </Grid>
-        </CardContent>
-      </Card>
+            </div>
+          </section>
 
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle className="text-lg">Setup API</CardTitle>
-          <CardDescription>Konfigurasi yang perlu disiapkan sebelum request pertama.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4 text-sm leading-6">
-          <ol className="list-decimal space-y-2 pl-5">
-            <li>Daftar atau masuk ke akun PakaiKuota.</li>
-            <li>Buka Dashboard → API Keys, buat key baru, lalu simpan plaintext key. Key hanya ditampilkan saat dibuat.</li>
-            <li>Pastikan saldo tersedia. Request pay-per-use akan memotong saldo Rupiah setelah provider berhasil merespons.</li>
-            <li>Gunakan slug model yang tersedia. Model gratis saat ini: <code>nvidia-nemotron-3-ultra-550b-a55bfree</code>.</li>
-          </ol>
-          <div className="rounded-lg border border-[var(--color-border)] p-4">
-            <p className="font-semibold">Endpoint</p>
-            <code>POST /api/v1/chat/completions</code>
-            <p className="mt-2">Production: <code>https://pakai-kuota.vercel.app/api/v1/chat/completions</code></p>
-          </div>
-          <div className="rounded-lg border border-[var(--color-border)] p-4">
-            <p className="font-semibold">Daftar model</p>
-            <p><code>GET /api/v1/models</code> dengan header API key. Hanya model yang diaktifkan admin yang ditampilkan.</p>
-          </div>
-        </CardContent>
-      </Card>
+          {/* Format */}
+          <section id="format" className="pk-panel pk-inview p-6 sm:p-8">
+            <h2 className="text-lg font-semibold tracking-[-0.02em]">
+              Format Request
+            </h2>
+            <p className="mt-1 text-sm text-[color:var(--pk-text-dim)]">
+              Parameter yang didukung endpoint chat completion.
+            </p>
 
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle className="text-lg">Format Request</CardTitle>
-          <CardDescription>Parameter yang didukung endpoint chat completion.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm leading-6">
-          <ul className="list-disc space-y-2 pl-5">
-            <li><code>model</code> wajib: slug dari daftar model.</li>
-            <li><code>messages</code> wajib: array berisi <code>role</code> dan <code>content</code>.</li>
-            <li><code>max_tokens</code> opsional: integer 1–4096. Gunakan nilai kecil untuk membatasi biaya.</li>
-            <li><code>stream</code>, <code>temperature</code>, dan <code>top_p</code> opsional.</li>
-            <li>Simpan API key di environment variable server, jangan di frontend publik atau repository.</li>
-          </ul>
-          <p>Billing memakai harga model, markup, kurs USD/IDR, dan token aktual dari provider jika tersedia. Request gagal tidak seharusnya memotong saldo.</p>
-        </CardContent>
-      </Card>
+            <ul className="mt-6 space-y-3 text-sm leading-6 text-[color:var(--pk-text-dim)]">
+              {[
+                <>
+                  <code className="rounded-md border border-[color:var(--pk-line-2)] bg-[#0b1626] px-1.5 py-0.5 font-mono text-xs text-[color:var(--pk-accent)]">
+                    model
+                  </code>{" "}
+                  wajib: slug dari daftar model.
+                </>,
+                <>
+                  <code className="rounded-md border border-[color:var(--pk-line-2)] bg-[#0b1626] px-1.5 py-0.5 font-mono text-xs text-[color:var(--pk-accent)]">
+                    messages
+                  </code>{" "}
+                  wajib: array berisi{" "}
+                  <code className="font-mono text-xs text-[color:var(--pk-text)]">
+                    role
+                  </code>{" "}
+                  dan{" "}
+                  <code className="font-mono text-xs text-[color:var(--pk-text)]">
+                    content
+                  </code>
+                  .
+                </>,
+                <>
+                  <code className="rounded-md border border-[color:var(--pk-line-2)] bg-[#0b1626] px-1.5 py-0.5 font-mono text-xs text-[color:var(--pk-accent)]">
+                    max_tokens
+                  </code>{" "}
+                  opsional: integer 1–4096. Gunakan nilai kecil untuk membatasi
+                  biaya.
+                </>,
+                <>
+                  <code className="rounded-md border border-[color:var(--pk-line-2)] bg-[#0b1626] px-1.5 py-0.5 font-mono text-xs text-[color:var(--pk-accent)]">
+                    stream
+                  </code>
+                  ,{" "}
+                  <code className="rounded-md border border-[color:var(--pk-line-2)] bg-[#0b1626] px-1.5 py-0.5 font-mono text-xs text-[color:var(--pk-accent)]">
+                    temperature
+                  </code>
+                  , dan{" "}
+                  <code className="rounded-md border border-[color:var(--pk-line-2)] bg-[#0b1626] px-1.5 py-0.5 font-mono text-xs text-[color:var(--pk-accent)]">
+                    top_p
+                  </code>{" "}
+                  opsional.
+                </>,
+                <>
+                  Simpan API key di environment variable server, jangan di
+                  frontend publik atau repository.
+                </>,
+              ].map((item, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <span className="mt-2.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[color:var(--pk-accent)]" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
 
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle className="text-lg">Error Umum</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm leading-6">
-          <p><code>401 INVALID_API_KEY</code>: API key salah atau sudah dicabut.</p>
-          <p><code>403 MODEL_DISABLED</code>: model belum diaktifkan admin.</p>
-          <p><code>404 MODEL_NOT_FOUND</code>: gunakan slug yang dikembalikan endpoint daftar model.</p>
-          <p><code>429 RATE_LIMITED</code>: batas request tercapai.</p>
-          <p><code>402/502 UPSTREAM_ERROR</code>: provider tidak memiliki channel, kredit, atau mengembalikan error.</p>
-        </CardContent>
-      </Card>
+            <p className="mt-6 rounded-xl border border-[color:var(--pk-line)] bg-[#0b1626]/60 p-4 text-sm leading-6 text-[color:var(--pk-text-dim)]">
+              Billing memakai harga model, markup, kurs USD/IDR, dan token
+              aktual dari provider jika tersedia. Request gagal tidak
+              seharusnya memotong saldo.
+            </p>
+          </section>
 
-      {/* Code Examples */}
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle className="text-lg">Contoh Code</CardTitle>
-          <CardDescription>
-            Copy-paste ready code untuk berbagai bahasa pemrograman
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-4">
-              <TabsTrigger value="curl">
-                <Terminal className="h-4 w-4 mr-2" />
-                cURL
-              </TabsTrigger>
-              <TabsTrigger value="python">Python</TabsTrigger>
-              <TabsTrigger value="node">Node.js</TabsTrigger>
-              <TabsTrigger value="go">Go</TabsTrigger>
-              <TabsTrigger value="php">PHP</TabsTrigger>
-            </TabsList>
+          {/* Errors */}
+          <section id="errors" className="pk-panel pk-inview p-6 sm:p-8">
+            <h2 className="text-lg font-semibold tracking-[-0.02em]">
+              Error Umum
+            </h2>
+            <p className="mt-1 text-sm text-[color:var(--pk-text-dim)]">
+              Kode error yang mungkin kamu temui dan solusinya.
+            </p>
 
-            {Object.entries(SNIPPETS).map(([lang, code]) => (
-              <TabsContent key={lang} value={lang} className="mt-0">
-                <div className="relative">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-2 top-2"
-                    onClick={copyToClipboard}
+            <div className="mt-6 space-y-2">
+              {[
+                {
+                  code: "401 INVALID_API_KEY",
+                  desc: "API key salah atau sudah dicabut.",
+                  tone: "err",
+                },
+                {
+                  code: "403 MODEL_DISABLED",
+                  desc: "Model belum diaktifkan admin.",
+                  tone: "warn",
+                },
+                {
+                  code: "404 MODEL_NOT_FOUND",
+                  desc: "Gunakan slug yang dikembalikan endpoint daftar model.",
+                  tone: "warn",
+                },
+                {
+                  code: "429 RATE_LIMITED",
+                  desc: "Batas request tercapai.",
+                  tone: "warn",
+                },
+                {
+                  code: "402/502 UPSTREAM_ERROR",
+                  desc: "Provider tidak memiliki channel, kredit, atau mengembalikan error.",
+                  tone: "err",
+                },
+              ].map((item) => (
+                <div
+                  key={item.code}
+                  className="flex flex-col gap-1.5 rounded-xl border border-[color:var(--pk-line)] bg-[#0b1626]/60 px-4 py-3 sm:flex-row sm:items-center sm:gap-4"
+                >
+                  <code
+                    className={`flex-shrink-0 rounded-md border px-2 py-1 font-mono text-xs ${
+                      item.tone === "err"
+                        ? "border-[#f87171]/30 bg-[#f87171]/10 text-[#fca5a5]"
+                        : "border-[color:var(--pk-accent)]/30 bg-[color:var(--pk-accent)]/10 text-[color:var(--pk-accent)]"
+                    }`}
                   >
-                    {copied ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </Button>
-                  <pre className="p-4 overflow-x-auto bg-[var(--color-muted)] rounded-lg text-sm font-mono">
-                    <code>{code}</code>
-                  </pre>
+                    {item.code}
+                  </code>
+                  <p className="text-sm text-[color:var(--pk-text-dim)]">
+                    {item.desc}
+                  </p>
                 </div>
-              </TabsContent>
-            ))}
-          </Tabs>
-        </CardContent>
-      </Card>
+              ))}
+            </div>
+          </section>
 
-      {/* Available Models */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Model yang Tersedia</CardTitle>
-          <CardDescription>
-            Daftar model yang dapat diakses via API
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {MODELS.map((model, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-4 border border-[var(--color-border)] rounded-lg"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-muted)]">
-                    <Code2 className="h-5 w-5 text-[var(--color-muted-foreground)]" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <code className="font-mono font-medium">{model.name}</code>
-                      <Badge
-                        variant={
-                          model.tier === "Murah"
-                            ? "success"
-                            : model.tier === "Mahal"
-                            ? "warning"
-                            : "secondary"
-                        }
-                        className="text-xs"
-                      >
-                        {model.tier}
-                      </Badge>
+          {/* Examples */}
+          <section id="examples" className="pk-panel pk-inview p-6 sm:p-8">
+            <h2 className="text-lg font-semibold tracking-[-0.02em]">
+              Contoh Code
+            </h2>
+            <p className="mt-1 text-sm text-[color:var(--pk-text-dim)]">
+              Copy-paste ready untuk berbagai bahasa pemrograman.
+            </p>
+
+            <div className="mt-6 overflow-hidden rounded-xl border border-[color:var(--pk-line)]">
+              <div className="pk-scroll flex items-center gap-1 overflow-x-auto border-b border-[color:var(--pk-line)] bg-[#0b1626]/80 p-1.5">
+                {TAB_LANGS.map((tab) => {
+                  const active = activeTab === tab.id
+                  const Icon = tab.icon
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() =>
+                        setActiveTab(tab.id as keyof typeof SNIPPETS)
+                      }
+                      aria-selected={active}
+                      role="tab"
+                      className={`inline-flex min-h-9 items-center gap-2 whitespace-nowrap rounded-lg px-3 text-xs font-medium transition-all ${
+                        active
+                          ? "bg-gradient-to-r from-[#ffc266] to-[#f0a93b] text-[#10192b] shadow-[0_6px_18px_-8px_rgba(240,169,59,0.9)]"
+                          : "text-[color:var(--pk-text-dim)] hover:text-white"
+                      }`}
+                    >
+                      {Icon ? <Icon size={12} /> : null}
+                      {tab.label}
+                    </button>
+                  )
+                })}
+
+                <button
+                  type="button"
+                  onClick={copyToClipboard}
+                  aria-label="Salin kode"
+                  className={`ml-auto inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition-all ${
+                    copied
+                      ? "border-[#34d399]/50 bg-[#34d399]/15 text-[#6ee7b7]"
+                      : "border-[color:var(--pk-line-2)] bg-[#0b1626] text-[color:var(--pk-text-mute)] hover:border-[color:var(--pk-accent)]/50 hover:text-[color:var(--pk-accent)]"
+                  }`}
+                >
+                  {copied ? <Check size={12} /> : <Copy size={12} />}
+                  <span className="hidden sm:inline">
+                    {copied ? "Tersalin" : "Salin"}
+                  </span>
+                </button>
+              </div>
+
+              <pre className="pk-scroll pk-terminal overflow-x-auto p-5 font-mono text-[12.5px] leading-6 text-[color:var(--pk-text)]">
+                <code>{code}</code>
+              </pre>
+            </div>
+          </section>
+
+          {/* Models */}
+          <section id="models" className="pk-panel pk-inview p-6 sm:p-8">
+            <h2 className="text-lg font-semibold tracking-[-0.02em]">
+              Model yang Tersedia
+            </h2>
+            <p className="mt-1 text-sm text-[color:var(--pk-text-dim)]">
+              Daftar model yang dapat diakses via API.
+            </p>
+
+            <div className="mt-6 space-y-3">
+              {MODELS.map((model) => (
+                <div
+                  key={model.name}
+                  className="pk-lift flex flex-col gap-4 rounded-xl border border-[color:var(--pk-line)] bg-[#0b1626]/60 p-4 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="flex min-w-0 items-center gap-4">
+                    <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-[color:var(--pk-line-2)] bg-[#0b1626] text-[color:var(--pk-accent)]">
+                      <Code2 size={16} />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <code className="truncate font-mono text-sm font-medium text-[color:var(--pk-text)]">
+                          {model.name}
+                        </code>
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-[#34d399]/30 bg-[#34d399]/10 px-2 py-0.5 text-[10px] font-medium text-[#6ee7b7]">
+                          {model.tier}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs text-[color:var(--pk-text-dim)]">
+                        {model.description}
+                      </p>
                     </div>
-                    <p className="text-sm text-[var(--color-muted-foreground)]">
-                      {model.description}
+                  </div>
+                  <div className="text-right sm:flex-shrink-0">
+                    <p className="font-mono text-base font-semibold text-[color:var(--pk-accent)]">
+                      {model.price}
+                    </p>
+                    <p className="text-[10px] uppercase tracking-widest text-[color:var(--pk-text-mute)]">
+                      per 1M tokens
                     </p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-bold">{model.price}</p>
-                  <p className="text-xs text-[var(--color-muted-foreground)]">
-                    per 1M tokens
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
 
-          <p className="mt-4 text-sm text-[var(--color-muted-foreground)] text-center">
-            Lihat semua model di{" "}
-            <a href="/pricing" className="text-[var(--color-brand)] hover:underline">
-              halaman harga
-            </a>
-          </p>
-        </CardContent>
-      </Card>
-    </Container>
+            <p className="mt-6 text-center text-sm text-[color:var(--pk-text-dim)]">
+              Lihat semua model di{" "}
+              <Link
+                href="/#harga"
+                className="font-medium text-[color:var(--pk-accent)] hover:underline"
+              >
+                halaman harga
+              </Link>
+            </p>
+          </section>
+
+          {/* CTA bawah */}
+          <section className="pk-panel pk-featured pk-inview relative overflow-hidden p-6 text-center sm:p-10">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_80%_at_50%_120%,rgba(240,169,59,0.22),transparent_70%)]"
+            />
+            <div className="relative">
+              <h2 className="text-2xl font-semibold tracking-[-0.03em] sm:text-3xl">
+                Siap mulai?
+              </h2>
+              <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[color:var(--pk-text-dim)]">
+                Buat akun, isi kuota, dan kirim request pertama kamu dalam
+                hitungan menit.
+              </p>
+              <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+                {user ? (
+                  <Link
+                    href="/dashboard"
+                    className="pk-btn-primary inline-flex min-h-11 items-center justify-center gap-2 px-5 text-sm"
+                  >
+                    <ArrowLeft size={14} />
+                    Kembali ke dashboard
+                  </Link>
+                ) : (
+                  <>
+                    <Link
+                      href="/signup"
+                      className="pk-btn-primary inline-flex min-h-11 items-center justify-center px-5 text-sm"
+                    >
+                      Buat akun gratis
+                    </Link>
+                    <Link
+                      href="/login"
+                      className="pk-btn-ghost inline-flex min-h-11 items-center justify-center px-5 text-sm font-medium"
+                    >
+                      Sudah punya akun
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
   )
 }

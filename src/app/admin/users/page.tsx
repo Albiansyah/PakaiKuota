@@ -1,19 +1,19 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useSupabase } from "@/components/providers/supabase-provider"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Container } from "@/components/layout"
+import { toast } from "sonner"
 import {
+  Building2,
+  Loader2,
+  RefreshCw,
+  Search,
+  Shield,
+  ShieldCheck,
+  UserCheck,
   Users,
   UserX,
-  UserCheck,
-  Loader2,
-  Search,
   X,
 } from "lucide-react"
 
@@ -28,236 +28,770 @@ type User = {
   created_at: string
 }
 
+type RoleFilter = "all" | "user" | "support" | "super_admin"
+
+const roleFilters: { value: RoleFilter; label: string }[] = [
+  { value: "all", label: "Semua Role" },
+  { value: "user", label: "User" },
+  { value: "support", label: "Support" },
+  { value: "super_admin", label: "Super Admin" },
+]
+
+function roleTone(role: string) {
+  switch (role) {
+    case "super_admin":
+      return "border-[#f87171]/40 bg-[#f87171]/10 text-[#fca5a5]"
+    case "support":
+      return "border-[#fbbf24]/40 bg-[#fbbf24]/10 text-[#fcd34d]"
+    default:
+      return "border-(--pk-line-2) bg-[#0b1626] text-(--pk-text-dim)"
+  }
+}
+
+function roleLabel(role: string) {
+  switch (role) {
+    case "super_admin":
+      return "Super Admin"
+    case "support":
+      return "Support"
+    case "user":
+      return "User"
+    default:
+      return role
+  }
+}
+
 export default function AdminUsersPage() {
   const { user } = useSupabase()
   const router = useRouter()
+
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [search, setSearch] = useState("")
-  const [roleFilter, setRoleFilter] = useState<string>("all")
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all")
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
 
+  const fetchUsers = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true)
+    else setRefreshing(true)
+    setError(false)
+    try {
+      const res = await fetch("/api/admin/users")
+      if (!res.ok) throw new Error("Unauthorized")
+      const data = (await res.json()) as { users?: User[] }
+      setUsers(data.users ?? [])
+    } catch (err) {
+      console.error("Failed to fetch users:", err)
+      setError(true)
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }, [])
+
   useEffect(() => {
-    if (!user) { router.push("/login"); return }
-    ;(async () => {
-      try {
-        const res = await fetch("/api/admin/users")
-        if (!res.ok) throw new Error("Unauthorized")
-        const data = await res.json()
-        setUsers(data.users ?? [])
-      } catch (err) {
-        console.error("Failed to fetch users:", err)
-      } finally {
-        setLoading(false)
-      }
-    })()
-  }, [user, router])
+    if (!user) {
+      router.push("/login")
+      return
+    }
+    void fetchUsers()
+  }, [user, router, fetchUsers])
 
-  // fetchUsers removed
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return users.filter((u) => {
+      const matchSearch =
+        q === "" ||
+        u.email.toLowerCase().includes(q) ||
+        (u.name ?? "").toLowerCase().includes(q) ||
+        (u.business_name ?? "").toLowerCase().includes(q)
+      const matchRole = roleFilter === "all" || u.role === roleFilter
+      return matchSearch && matchRole
+    })
+  }, [users, search, roleFilter])
 
-  const toggleSuspend = async (id: string, currentStatus: boolean) => {
+  const stats = useMemo(() => {
+    const total = users.length
+    const suspended = users.filter((u) => u.is_suspended).length
+    const reseller = users.filter((u) => u.business_name).length
+    return { total, suspended, reseller, active: total - suspended }
+  }, [users])
+
+  async function toggleSuspend(id: string, currentStatus: boolean) {
+    const action = currentStatus ? "Aktifkan" : "Suspend"
+    if (!confirm(`${action} user ini?`)) return
     setActionLoading(id)
     try {
-      await fetch("/api/admin/users", {
+      const res = await fetch("/api/admin/users", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: id, is_suspended: !currentStatus }),
       })
+      if (!res.ok) throw new Error("Gagal mengubah status user")
       setUsers((prev) =>
-        prev.map((u) => (u.id === id ? { ...u, is_suspended: !currentStatus } : u))
+        prev.map((u) =>
+          u.id === id ? { ...u, is_suspended: !currentStatus } : u
+        )
       )
-      if (selectedUser?.id === id) {
-        setSelectedUser((prev) => prev ? { ...prev, is_suspended: !currentStatus } : null)
-      }
+      setSelectedUser((prev) =>
+        prev && prev.id === id
+          ? { ...prev, is_suspended: !currentStatus }
+          : prev
+      )
+      toast.success(`User berhasil di${currentStatus ? "aktifkan" : "suspend"}`)
     } catch (err) {
       console.error("Failed to toggle suspend:", err)
+      toast.error("Gagal mengubah status user")
+    } finally {
+      setActionLoading(null)
     }
-    setActionLoading(null)
   }
 
-  const filtered = users.filter((u) => {
-    const matchSearch = search === "" ||
-      u.email.toLowerCase().includes(search.toLowerCase()) ||
-      (u.name && u.name.toLowerCase().includes(search.toLowerCase()))
-    const matchRole = roleFilter === "all" || u.role === roleFilter
-    return matchSearch && matchRole
-  })
-
   return (
-    <div>
-      <div className="flex items-center gap-3 mb-2">
-        <Users className="h-8 w-8 text-[var(--accent)]" />
-        <h1 className="text-3xl font-bold">Manajemen User</h1>
-      </div>
-      <p className="text-[var(--color-muted-foreground)] mb-6">
-        Kelola user, role, dan status akun
-      </p>
+    <div className="relative min-h-screen text-(--pk-text)">
+      <header className="border-b border-(--pk-line) bg-[#070f1e]/60 px-5 py-8 backdrop-blur-sm sm:px-8">
+        <div className="mx-auto max-w-6xl">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-(--pk-accent)">
+                Admin tool
+              </p>
+              <h1 className="mt-3 flex items-center gap-3 text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
+                <Users size={26} className="text-(--pk-accent)" />
+                Manajemen User
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm text-(--pk-text-dim)">
+                Kelola user, role, dan status akun.
+              </p>
+            </div>
 
-      {/* Filters */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-muted-foreground)]" />
-          <Input
-            placeholder="Cari email atau nama..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-          {search && (
-            <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2">
-              <X className="h-4 w-4 text-[var(--color-muted-foreground)]" />
+            <button
+              type="button"
+              onClick={() => void fetchUsers(true)}
+              disabled={refreshing}
+              aria-label="Refresh"
+              className="pk-btn-ghost inline-flex h-10 w-10 items-center justify-center disabled:opacity-60"
+            >
+              <RefreshCw
+                size={15}
+                className={refreshing ? "animate-spin" : ""}
+              />
             </button>
-          )}
+          </div>
         </div>
-        <select
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
-          className="px-3 py-1.5 rounded-lg border bg-[var(--color-muted)] text-[var(--color-foreground)] text-sm"
-        >
-          <option value="all">Semua Role</option>
-          <option value="user">User</option>
-          <option value="support">Support</option>
-          <option value="super_admin">Super Admin</option>
-        </select>
-        <span className="text-sm text-[var(--color-muted-foreground)]">
-          {filtered.length} user
-        </span>
-      </div>
+      </header>
 
-      <Card>
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="flex items-center justify-center min-h-[300px]">
-              <Loader2 className="h-8 w-8 animate-spin text-[var(--color-muted-foreground)]" />
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="text-center py-16 text-[var(--color-muted-foreground)]">
-              Tidak ada user ditemukan
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-[var(--color-border)]">
-                    <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-muted-foreground)] uppercase">Email</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-muted-foreground)] uppercase">Role</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-[var(--color-muted-foreground)] uppercase">Saldo</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-muted-foreground)] uppercase">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-[var(--color-muted-foreground)] uppercase">Reseller</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-[var(--color-muted-foreground)] uppercase">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((u) => (
-                    <tr key={u.id} className="border-b border-[var(--color-border)] last:border-0 hover:bg-[var(--color-muted)]/50 cursor-pointer" onClick={() => setSelectedUser(u)}>
-                      <td className="px-4 py-3">
-                        <p className="font-medium text-sm">{u.email}</p>
-                        {u.name && <p className="text-xs text-[var(--color-muted-foreground)]">{u.name}</p>}
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge variant={u.role === "super_admin" ? "destructive" : u.role === "support" ? "warning" : "secondary"}>
-                          {u.role}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-right font-mono text-sm">
-                        Rp {u.balance_rupiah.toLocaleString("id-ID")}
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge variant={u.is_suspended ? "destructive" : "success"}>
-                          {u.is_suspended ? "Suspended" : "Aktif"}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3">
-                        {u.business_name && (
-                          <Badge variant="outline">{u.business_name}</Badge>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => { e.stopPropagation(); toggleSuspend(u.id, u.is_suspended) }}
-                          disabled={actionLoading === u.id || u.role === "super_admin"}
-                        >
-                          {actionLoading === u.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : u.is_suspended ? (
-                            <><UserCheck className="h-4 w-4 mr-1" />Aktifkan</>
-                          ) : (
-                            <><UserX className="h-4 w-4 mr-1" />Suspend</>
-                          )}
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
+        {error && (
+          <div className="pk-panel mb-6 p-5 text-center">
+            <p className="text-sm text-[#fca5a5]">
+              Data user tidak bisa dimuat.
+            </p>
+            <button
+              type="button"
+              onClick={() => void fetchUsers()}
+              className="pk-btn-ghost mt-4 inline-flex min-h-10 items-center justify-center px-4 text-xs font-medium"
+            >
+              Coba lagi
+            </button>
+          </div>
+        )}
 
-      {/* Detail Modal */}
-      {selectedUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--overlay)]" onClick={() => setSelectedUser(null)}>
-          <div className="bg-[var(--color-card)] rounded-xl border border-[var(--color-border)] p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold">Detail User</h2>
-              <button onClick={() => setSelectedUser(null)}>
-                <X className="h-5 w-5 text-[var(--color-muted-foreground)]" />
-              </button>
+        {!error && !loading && users.length > 0 && (
+          <section className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="pk-panel pk-inview p-5">
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] uppercase tracking-widest text-(--pk-text-mute)">
+                  Total user
+                </p>
+                <Users size={14} className="text-(--pk-text-mute)" />
+              </div>
+              <p className="mt-3 font-mono text-2xl">{stats.total}</p>
+              <p className="mt-1 text-xs text-(--pk-text-mute)">
+                Semua akun terdaftar
+              </p>
             </div>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-[var(--color-muted-foreground)]">Email</span>
-                <span className="font-medium">{selectedUser.email}</span>
+
+            <div className="pk-panel pk-inview p-5">
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] uppercase tracking-widest text-(--pk-text-mute)">
+                  Aktif
+                </p>
+                <span className="h-1.5 w-1.5 rounded-full bg-[#34d399]" />
               </div>
-              <div className="flex justify-between">
-                <span className="text-[var(--color-muted-foreground)]">Nama</span>
-                <span>{selectedUser.name || "-"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[var(--color-muted-foreground)]">Role</span>
-                <Badge variant={selectedUser.role === "super_admin" ? "destructive" : "secondary"}>{selectedUser.role}</Badge>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[var(--color-muted-foreground)]">Saldo</span>
-                <span className="font-mono">Rp {selectedUser.balance_rupiah.toLocaleString("id-ID")}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[var(--color-muted-foreground)]">Status</span>
-                <Badge variant={selectedUser.is_suspended ? "destructive" : "success"}>
-                  {selectedUser.is_suspended ? "Suspended" : "Aktif"}
-                </Badge>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[var(--color-muted-foreground)]">Bisnis</span>
-                <span>{selectedUser.business_name || "-"}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[var(--color-muted-foreground)]">Daftar</span>
-                <span className="font-mono">{new Date(selectedUser.created_at).toLocaleDateString("id-ID")}</span>
-              </div>
+              <p className="mt-3 font-mono text-2xl text-[#6ee7b7]">
+                {stats.active}
+              </p>
+              <p className="mt-1 text-xs text-(--pk-text-mute)">
+                Akun dapat login
+              </p>
             </div>
-            <div className="flex gap-2 mt-6">
-              <Button variant="outline" className="flex-1" onClick={() => setSelectedUser(null)}>Tutup</Button>
-              {selectedUser.role !== "super_admin" && (
-                <Button
-                  variant={selectedUser.is_suspended ? "default" : "destructive"}
-                  className="flex-1"
-                  onClick={() => toggleSuspend(selectedUser.id, selectedUser.is_suspended)}
-                  disabled={actionLoading === selectedUser.id}
+
+            <div className="pk-panel pk-inview p-5">
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] uppercase tracking-widest text-(--pk-text-mute)">
+                  Reseller
+                </p>
+                <Building2 size={14} className="text-(--pk-accent)" />
+              </div>
+              <p className="mt-3 font-mono text-2xl text-(--pk-accent)">
+                {stats.reseller}
+              </p>
+              <p className="mt-1 text-xs text-(--pk-text-mute)">
+                Punya business_name
+              </p>
+            </div>
+
+            <div
+              className={`pk-panel pk-inview p-5 ${
+                stats.suspended > 0 ? "pk-featured" : ""
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] uppercase tracking-widest text-(--pk-text-mute)">
+                  Suspended
+                </p>
+                <UserX size={14} className="text-[#fca5a5]" />
+              </div>
+              <p className="mt-3 font-mono text-2xl text-[#fca5a5]">
+                {stats.suspended}
+              </p>
+              <p className="mt-1 text-xs text-(--pk-text-mute)">
+                {stats.suspended > 0 ? "Perlu ditinjau" : "Tidak ada"}
+              </p>
+            </div>
+          </section>
+        )}
+
+        {!error && !loading && users.length > 0 && (
+          <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div
+              role="group"
+              aria-label="Filter role"
+              className="inline-flex w-fit rounded-xl border border-(--pk-line-2) bg-[#0b1626] p-1"
+            >
+              {roleFilters.map((item) => {
+                const active = roleFilter === item.value
+                return (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => setRoleFilter(item.value)}
+                    aria-pressed={active}
+                    className={`min-h-9 whitespace-nowrap rounded-lg px-3 text-xs font-medium transition-all ${
+                      active
+                        ? "bg-linear-to-r from-[#ffc266] to-[#f0a93b] text-[#10192b] shadow-[0_6px_18px_-8px_rgba(240,169,59,0.9)]"
+                        : "text-(--pk-text-dim) hover:text-white"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="relative lg:w-72">
+              <span
+                aria-hidden
+                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-(--pk-text-mute)"
+              >
+                <Search size={15} />
+              </span>
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Cari email, nama, atau bisnis..."
+                className="min-h-11 w-full rounded-xl border border-(--pk-line-2) bg-[#0b1626] pl-10 pr-10 text-sm text-(--pk-text) outline-none transition-colors placeholder:text-(--pk-text-mute) focus:border-(--pk-accent) focus:ring-2 focus:ring-(--pk-accent)/25"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  aria-label="Bersihkan"
+                  className="absolute right-2.5 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-(--pk-text-mute) transition-colors hover:text-white"
                 >
-                  {actionLoading === selectedUser.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : selectedUser.is_suspended ? "Aktifkan" : "Suspend"}
-                </Button>
+                  <X size={14} />
+                </button>
               )}
             </div>
           </div>
+        )}
+
+        <div className="pk-panel pk-inview overflow-hidden">
+          {loading && (
+            <div className="flex items-center justify-center py-20">
+              <Loader2
+                size={24}
+                className="animate-spin text-(--pk-text-mute)"
+              />
+            </div>
+          )}
+
+          {!loading && users.length === 0 && (
+            <div className="p-12 text-center">
+              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-(--pk-line-2) bg-[#0b1626]">
+                <Users size={22} className="text-(--pk-text-mute)" />
+              </span>
+              <p className="mt-5 font-semibold">Belum ada user</p>
+              <p className="mt-2 text-sm text-(--pk-text-dim)">
+                User akan muncul di sini setelah mendaftar.
+              </p>
+            </div>
+          )}
+
+          {!loading && users.length > 0 && filtered.length === 0 && (
+            <div className="p-12 text-center">
+              <p className="font-semibold">Tidak ada user yang cocok.</p>
+              <p className="mt-2 text-sm text-(--pk-text-dim)">
+                Coba ubah kata kunci atau filter role.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch("")
+                  setRoleFilter("all")
+                }}
+                className="pk-btn-ghost mt-5 inline-flex min-h-10 items-center justify-center px-4 text-xs font-medium"
+              >
+                Reset filter
+              </button>
+            </div>
+          )}
+
+          {!loading && filtered.length > 0 && (
+            <>
+              {/* Desktop table */}
+              <div className="pk-scroll hidden overflow-x-auto lg:block">
+                <table className="w-full min-w-5xl text-left text-sm">
+                  <thead className="border-b border-(--pk-line) text-(--pk-text-mute)">
+                    <tr>
+                      <th className="px-5 py-4 text-[11px] font-semibold uppercase tracking-widest">
+                        Email
+                      </th>
+                      <th className="px-5 py-4 text-[11px] font-semibold uppercase tracking-widest">
+                        Role
+                      </th>
+                      <th className="px-5 py-4 text-right text-[11px] font-semibold uppercase tracking-widest">
+                        Saldo
+                      </th>
+                      <th className="px-5 py-4 text-[11px] font-semibold uppercase tracking-widest">
+                        Status
+                      </th>
+                      <th className="px-5 py-4 text-[11px] font-semibold uppercase tracking-widest">
+                        Reseller
+                      </th>
+                      <th className="w-32 px-5 py-4 text-right text-[11px] font-semibold uppercase tracking-widest">
+                        Aksi
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((u) => {
+                      const isProcessing = actionLoading === u.id
+                      const isSuperAdmin = u.role === "super_admin"
+                      return (
+                        <tr
+                          key={u.id}
+                          onClick={() => setSelectedUser(u)}
+                          className="cursor-pointer border-b border-(--pk-line) transition-colors last:border-0 hover:bg-white/2"
+                        >
+                          <td className="px-5 py-4">
+                            <p className="truncate text-xs font-medium text-(--pk-text)">
+                              {u.email}
+                            </p>
+                            {u.name && (
+                              <p className="mt-0.5 truncate text-[11px] text-(--pk-text-mute)">
+                                {u.name}
+                              </p>
+                            )}
+                          </td>
+                          <td className="px-5 py-4">
+                            <span
+                              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-medium ${roleTone(
+                                u.role
+                              )}`}
+                            >
+                              {isSuperAdmin && <Shield size={10} />}
+                              {roleLabel(u.role)}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 text-right font-mono text-xs text-(--pk-text)">
+                            Rp {u.balance_rupiah.toLocaleString("id-ID")}
+                          </td>
+                          <td className="px-5 py-4">
+                            {u.is_suspended ? (
+                              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#f87171]/30 bg-[#f87171]/10 px-2.5 py-0.5 text-[10px] font-medium text-[#fca5a5]">
+                                <span className="h-1.5 w-1.5 rounded-full bg-[#f87171]" />
+                                Suspended
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#34d399]/30 bg-[#34d399]/10 px-2.5 py-0.5 text-[10px] font-medium text-[#6ee7b7]">
+                                <span className="h-1.5 w-1.5 rounded-full bg-[#34d399]" />
+                                Aktif
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-5 py-4">
+                            {u.business_name ? (
+                              <span className="inline-flex max-w-[10rem] items-center gap-1.5 truncate rounded-full border border-(--pk-line-2) bg-[#0b1626] px-2.5 py-0.5 text-[10px] font-medium text-(--pk-text-dim)">
+                                <Building2 size={10} />
+                                {u.business_name}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-(--pk-text-mute)">
+                                —
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-5 py-4 text-right">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                void toggleSuspend(u.id, u.is_suspended)
+                              }}
+                              disabled={isProcessing || isSuperAdmin}
+                              title={
+                                isSuperAdmin
+                                  ? "Super admin tidak bisa disuspend"
+                                  : undefined
+                              }
+                              className={`inline-flex min-h-8 items-center gap-1.5 rounded-lg border px-2.5 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                                u.is_suspended
+                                  ? "border-[#34d399]/40 bg-[#34d399]/10 text-[#6ee7b7] hover:bg-[#34d399]/20"
+                                  : "border-[#f87171]/40 bg-[#f87171]/10 text-[#fca5a5] hover:bg-[#f87171]/20"
+                              }`}
+                            >
+                              {isProcessing ? (
+                                <Loader2
+                                  size={11}
+                                  className="animate-spin"
+                                />
+                              ) : u.is_suspended ? (
+                                <>
+                                  <UserCheck size={11} />
+                                  Aktifkan
+                                </>
+                              ) : (
+                                <>
+                                  <UserX size={11} />
+                                  Suspend
+                                </>
+                              )}
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile cards */}
+              <ul className="divide-y divide-(--pk-line) lg:hidden">
+                {filtered.map((u) => {
+                  const isProcessing = actionLoading === u.id
+                  const isSuperAdmin = u.role === "super_admin"
+                  return (
+                    <li
+                      key={u.id}
+                      className="cursor-pointer p-4 transition-colors hover:bg-white/2"
+                      onClick={() => setSelectedUser(u)}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-medium text-(--pk-text)">
+                            {u.email}
+                          </p>
+                          {u.name && (
+                            <p className="mt-0.5 truncate text-[11px] text-(--pk-text-mute)">
+                              {u.name}
+                            </p>
+                          )}
+                        </div>
+                        <span
+                          className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${roleTone(
+                            u.role
+                          )}`}
+                        >
+                          {isSuperAdmin && <Shield size={9} />}
+                          {roleLabel(u.role)}
+                        </span>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        {u.is_suspended ? (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-[#f87171]/30 bg-[#f87171]/10 px-2 py-0.5 text-[10px] font-medium text-[#fca5a5]">
+                            <span className="h-1 w-1 rounded-full bg-[#f87171]" />
+                            Suspended
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-[#34d399]/30 bg-[#34d399]/10 px-2 py-0.5 text-[10px] font-medium text-[#6ee7b7]">
+                            <span className="h-1 w-1 rounded-full bg-[#34d399]" />
+                            Aktif
+                          </span>
+                        )}
+                        {u.business_name && (
+                          <span className="inline-flex max-w-[10rem] items-center gap-1 truncate rounded-full border border-(--pk-line-2) bg-[#0b1626] px-2 py-0.5 text-[10px] text-(--pk-text-dim)">
+                            <Building2 size={9} />
+                            {u.business_name}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="mt-3 flex items-center justify-between gap-3">
+                        <p className="font-mono text-xs text-(--pk-text-dim)">
+                          Rp {u.balance_rupiah.toLocaleString("id-ID")}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            void toggleSuspend(u.id, u.is_suspended)
+                          }}
+                          disabled={isProcessing || isSuperAdmin}
+                          className={`inline-flex min-h-8 items-center gap-1.5 rounded-lg border px-2.5 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                            u.is_suspended
+                              ? "border-[#34d399]/40 bg-[#34d399]/10 text-[#6ee7b7]"
+                              : "border-[#f87171]/40 bg-[#f87171]/10 text-[#fca5a5]"
+                          }`}
+                        >
+                          {isProcessing ? (
+                            <Loader2 size={11} className="animate-spin" />
+                          ) : u.is_suspended ? (
+                            <>
+                              <UserCheck size={11} />
+                              Aktifkan
+                            </>
+                          ) : (
+                            <>
+                              <UserX size={11} />
+                              Suspend
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+
+              <div className="border-t border-(--pk-line) px-5 py-3 text-xs text-(--pk-text-mute)">
+                Menampilkan {filtered.length} dari {users.length} user
+              </div>
+            </>
+          )}
         </div>
+      </div>
+
+      {selectedUser && (
+        <UserDetailModal
+          user={selectedUser}
+          processing={actionLoading === selectedUser.id}
+          onClose={() => setSelectedUser(null)}
+          onToggleSuspend={() =>
+            void toggleSuspend(selectedUser.id, selectedUser.is_suspended)
+          }
+        />
       )}
+    </div>
+  )
+}
+
+function UserDetailModal({
+  user,
+  processing,
+  onClose,
+  onToggleSuspend,
+}: {
+  user: User
+  processing: boolean
+  onClose: () => void
+  onToggleSuspend: () => void
+}) {
+  useEffect(() => {
+    const original = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    function onEsc(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose()
+    }
+    document.addEventListener("keydown", onEsc)
+    return () => {
+      document.body.style.overflow = original
+      document.removeEventListener("keydown", onEsc)
+    }
+  }, [onClose])
+
+  const isSuperAdmin = user.role === "super_admin"
+
+  const rows: { label: string; value: React.ReactNode }[] = [
+    {
+      label: "Email",
+      value: (
+        <span className="font-mono text-xs text-(--pk-text)">
+          {user.email}
+        </span>
+      ),
+    },
+    {
+      label: "Nama",
+      value: (
+        <span className="text-xs text-(--pk-text-dim)">
+          {user.name || "—"}
+        </span>
+      ),
+    },
+    {
+      label: "Role",
+      value: (
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-medium ${roleTone(
+            user.role
+          )}`}
+        >
+          {isSuperAdmin && <ShieldCheck size={10} />}
+          {roleLabel(user.role)}
+        </span>
+      ),
+    },
+    {
+      label: "Saldo",
+      value: (
+        <span className="font-mono text-sm font-semibold text-(--pk-accent)">
+          Rp {user.balance_rupiah.toLocaleString("id-ID")}
+        </span>
+      ),
+    },
+    {
+      label: "Status",
+      value: user.is_suspended ? (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-[#f87171]/30 bg-[#f87171]/10 px-2.5 py-0.5 text-[10px] font-medium text-[#fca5a5]">
+          <span className="h-1.5 w-1.5 rounded-full bg-[#f87171]" />
+          Suspended
+        </span>
+      ) : (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-[#34d399]/30 bg-[#34d399]/10 px-2.5 py-0.5 text-[10px] font-medium text-[#6ee7b7]">
+          <span className="h-1.5 w-1.5 rounded-full bg-[#34d399]" />
+          Aktif
+        </span>
+      ),
+    },
+    {
+      label: "Bisnis",
+      value: (
+        <span className="text-xs text-(--pk-text-dim)">
+          {user.business_name || "—"}
+        </span>
+      ),
+    },
+    {
+      label: "Terdaftar",
+      value: (
+        <span className="font-mono text-xs text-(--pk-text-dim)">
+          {new Date(user.created_at).toLocaleDateString("id-ID", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })}
+        </span>
+      ),
+    },
+  ]
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="user-modal-title"
+      className="fixed inset-0 z-60 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        aria-hidden
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+      />
+
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="pk-panel pk-menu-in relative max-h-[90vh] w-full max-w-md overflow-y-auto p-6"
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Tutup"
+          className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-lg text-(--pk-text-mute) transition-colors hover:bg-white/5 hover:text-white"
+        >
+          <X size={16} />
+        </button>
+
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-(--pk-line-2) bg-[#0b1626]">
+          <Users size={20} className="text-(--pk-accent)" />
+        </div>
+
+        <h2
+          id="user-modal-title"
+          className="mt-4 text-lg font-semibold text-(--pk-text)"
+        >
+          Detail User
+        </h2>
+        <p className="mt-2 text-sm text-(--pk-text-dim)">
+          Informasi lengkap akun user.
+        </p>
+
+        <dl className="mt-5 space-y-3 text-sm">
+          {rows.map((row) => (
+            <div
+              key={row.label}
+              className="flex items-start justify-between gap-4 border-b border-(--pk-line) pb-3 last:border-0 last:pb-0"
+            >
+              <dt className="shrink-0 text-xs text-(--pk-text-mute)">
+                {row.label}
+              </dt>
+              <dd className="min-w-0 text-right">{row.value}</dd>
+            </div>
+          ))}
+        </dl>
+
+        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row">
+          <button
+            type="button"
+            onClick={onClose}
+            className="pk-btn-ghost inline-flex min-h-10 flex-1 items-center justify-center px-4 text-sm font-medium"
+          >
+            Tutup
+          </button>
+          {!isSuperAdmin && (
+            <button
+              type="button"
+              onClick={onToggleSuspend}
+              disabled={processing}
+              className={`inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-medium transition-colors disabled:cursor-wait disabled:opacity-60 ${
+                user.is_suspended
+                  ? "border-[#34d399]/40 bg-[#34d399]/10 text-[#6ee7b7] hover:bg-[#34d399]/20"
+                  : "border-[#f87171]/40 bg-[#f87171]/10 text-[#fca5a5] hover:bg-[#f87171]/20"
+              }`}
+            >
+              {processing ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : user.is_suspended ? (
+                <>
+                  <UserCheck size={13} />
+                  Aktifkan
+                </>
+              ) : (
+                <>
+                  <UserX size={13} />
+                  Suspend
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

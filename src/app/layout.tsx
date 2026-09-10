@@ -14,8 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PakaiKuota",
-  description: "Akses API LLM dengan pembayaran Rupiah, saldo jelas, dan endpoint chat completions.",
+  title: "PakaiKuota — API LLM. Bayar dengan Rupiah.",
+  description:
+    "Akses API LLM dengan pembayaran Rupiah, saldo jelas, dan endpoint chat completions.",
 };
 
 export default function RootLayout({
@@ -26,7 +27,9 @@ export default function RootLayout({
       lang="id"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col"><Providers>{children}</Providers></body>
+      <body className="min-h-full flex flex-col">
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

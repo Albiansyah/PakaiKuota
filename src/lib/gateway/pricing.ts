@@ -6,11 +6,12 @@ export type PricingModel = {
 
 export function estimateCostUsd(
   inputTokens: number,
-  maxTokens: number,
+  outputTokens: number,
   model: PricingModel,
 ): number {
   const upstream =
     (inputTokens * model.input_price_per_1k) / 1000 +
-    (maxTokens * model.output_price_per_1k) / 1000;
+    (outputTokens * model.output_price_per_1k) / 1000;
+
   return upstream * (1 + model.markup_percent / 100 + 0.03);
 }
