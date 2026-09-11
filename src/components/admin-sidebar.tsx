@@ -2,12 +2,13 @@
 
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import {
   BarChart3,
   BookOpen,
   ChevronDown,
   ChevronUp,
+  Coins,
   LayoutDashboard,
   Loader2,
   LogOut,
@@ -18,6 +19,7 @@ import {
   Palette,
   Settings,
   Shield,
+  ShieldCheck,
   User,
   Users,
   WalletCards,
@@ -33,17 +35,19 @@ const groups = [
       { href: "/admin/ringkasan", label: "Ringkasan", icon: LayoutDashboard },
     ],
   },
+{
+  label: "Manajemen",
+  items: [
+    { href: "/admin/users", label: "Users", icon: Users },
+    { href: "/admin/transactions", label: "Transaksi", icon: WalletCards },
+    { href: "/admin/refunds", label: "Refund queue", icon: WalletCards },
+    { href: "/admin/feedback", label: "Feedback", icon: MessageSquare },
+  ],
+},
   {
-    label: "Manajemen",
+    label: "Keuangan",
     items: [
-      { href: "/admin?tab=users", label: "Users", icon: Users },
-      {
-        href: "/admin?tab=transactions",
-        label: "Transaksi",
-        icon: WalletCards,
-      },
-      { href: "/admin?tab=refunds", label: "Refund queue", icon: WalletCards },
-      { href: "/admin/feedback", label: "Feedback", icon: MessageSquare },
+      { href: "/admin/finance", label: "Finance & P&L", icon: Coins },
     ],
   },
   {
@@ -60,7 +64,7 @@ const groups = [
     label: "Laporan",
     items: [
       {
-        href: "/admin?tab=reconciliation",
+        href: "/admin/reconciliation",
         label: "Reconciliation",
         icon: BarChart3,
       },
@@ -92,14 +96,43 @@ export function AdminSidebar({
 }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const activeTab = searchParams.get("tab")
+  const activeFilter = searchParams.get("filter")
 
   const [mobileOpen, setMobileOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const [loggingOut, setLoggingOut] = useState(false)
+  const [awaitingCount, setAwaitingCount] = useState<number>(0)
 
   const allCollapsed = groups.every((g) => collapsed[g.label])
+
+  /* ------------------------------------------------------------
+     Fetch awaiting verification count
+     ------------------------------------------------------------ */
+  const fetchAwaitingCount = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/transactions/pending-count", {
+        cache: "no-store",
+      })
+      if (!res.ok) return
+      const data = (await res.json()) as { count?: number }
+      setAwaitingCount(data.count ?? 0)
+    } catch {
+      // silent
+    }
+  }, [])
+
+  useEffect(() => {
+    void fetchAwaitingCount()
+    const timer = setInterval(fetchAwaitingCount, 30_000)
+    return () => clearInterval(timer)
+  }, [fetchAwaitingCount])
+
+  useEffect(() => {
+    if (pathname === "/admin/transactions") {
+      void fetchAwaitingCount()
+    }
+  }, [pathname, fetchAwaitingCount])
 
   useEffect(() => {
     if (!menuOpen) return
@@ -136,7 +169,7 @@ export function AdminSidebar({
   useEffect(() => {
     setMobileOpen(false)
     setMenuOpen(false)
-  }, [pathname, activeTab])
+  }, [pathname, activeFilter])
 
   function toggleGroup(label: string) {
     setCollapsed((c) => ({ ...c, [label]: !c[label] }))
@@ -154,12 +187,21 @@ export function AdminSidebar({
     }
   }
 
+  /* ------------------------------------------------------------
+     isActive — handle path + filter query
+     ------------------------------------------------------------ */
   function isActive(href: string) {
-    const [itemPath, itemQuery] = href.split("?")
-    const itemTab = itemQuery?.replace("tab=", "")
+    const [itemPath, itemQuery = ""] = href.split("?")
     if (pathname !== itemPath) return false
-    if (itemTab) return activeTab === itemTab
-    return !activeTab
+
+    const itemParams = new URLSearchParams(itemQuery)
+    const itemFilter = itemParams.get("filter")
+
+    // Item dengan filter (Verify Queue vs Transaksi biasa)
+    if (itemFilter) return activeFilter === itemFilter
+
+    // Item tanpa filter — aktif hanya kalau tidak ada filter di URL
+    return !activeFilter
   }
 
   async function handleLogout() {
@@ -211,6 +253,9 @@ export function AdminSidebar({
                 {group.items.map((item) => {
                   const Icon = item.icon
                   const active = isActive(item.href)
+                  const isVerifyQueue = item.label === "Verify Queue"
+                  const showBadge = isVerifyQueue && awaitingCount > 0
+
                   return (
                     <Link
                       key={item.href}
@@ -223,7 +268,20 @@ export function AdminSidebar({
                       }`}
                     >
                       <Icon size={16} className="shrink-0" />
-                      <span className="truncate">{item.label}</span>
+                      <span className="min-w-0 flex-1 truncate">
+                        {item.label}
+                      </span>
+                      {showBadge && (
+                        <span
+                          className={`inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 font-mono text-[10px] font-semibold ${
+                            active
+                              ? "bg-[#10192b]/20 text-[#10192b]"
+                              : "bg-[#fbbf24]/20 text-[#fcd34d]"
+                          }`}
+                        >
+                          {awaitingCount > 99 ? "99+" : awaitingCount}
+                        </span>
+                      )}
                     </Link>
                   )
                 })}
