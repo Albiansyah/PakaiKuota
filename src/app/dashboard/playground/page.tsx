@@ -109,7 +109,8 @@ export default function PlaygroundPage() {
               : []),
             { role: "user", content: message },
           ],
-          max_tokens: 256,
+          // TODO: Workaround E2E testing. Kembalikan ke 256 (atau nilai production) setelah kredit OpenRouter ditambah.
+          max_tokens: 44,
           stream: false,
         }),
         signal: controller.signal,
