@@ -1,6 +1,6 @@
-"use client";
+"use client"
 
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react"
 import {
   AlertTriangle,
   Check,
@@ -9,89 +9,89 @@ import {
   Send,
   Square,
   Trash2,
-} from "lucide-react";
+} from "lucide-react"
 
-type Model = { id: string; object: string; owned_by: string };
+type Model = { id: string; object: string; owned_by: string }
 
 export default function PlaygroundPage() {
-  const [models, setModels] = useState<Model[]>([]);
-  const [model, setModel] = useState("");
-  const [apiKey, setApiKey] = useState("");
-  const [system, setSystem] = useState("You are a concise assistant.");
-  const [message, setMessage] = useState("");
-  const [responseText, setResponseText] = useState("");
+  const [models, setModels] = useState<Model[]>([])
+  const [model, setModel] = useState("")
+  const [apiKey, setApiKey] = useState("")
+  const [system, setSystem] = useState("You are a concise assistant.")
+  const [message, setMessage] = useState("")
+  const [responseText, setResponseText] = useState("")
   const [state, setState] = useState<"idle" | "loading" | "ready" | "error">(
     "idle"
-  );
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
-  const [copied, setCopied] = useState(false);
-  const [elapsed, setElapsed] = useState<number | null>(null);
+  )
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState("")
+  const [copied, setCopied] = useState(false)
+  const [elapsed, setElapsed] = useState<number | null>(null)
 
-  const abortRef = useRef<AbortController | null>(null);
-  const responseRef = useRef<HTMLPreElement | null>(null);
+  const abortRef = useRef<AbortController | null>(null)
+  const responseRef = useRef<HTMLPreElement | null>(null)
 
   useEffect(() => {
     if (!apiKey) {
-      setState("idle");
-      setModels([]);
-      setModel("");
-      return;
+      setState("idle")
+      setModels([])
+      setModel("")
+      return
     }
-    let active = true;
-    setState("loading");
-    setError("");
+    let active = true
+    setState("loading")
+    setError("")
     const timer = setTimeout(() => {
       fetch("/api/v1/models", {
         headers: { authorization: `Bearer ${apiKey}` },
       })
         .then(async (res) => {
-          if (!active) return;
+          if (!active) return
           if (!res.ok) {
             throw new Error(
               "API key tidak valid atau model tidak tersedia."
-            );
+            )
           }
-          const data = (await res.json()) as { data: Model[] };
-          if (!active) return;
-          setModels(data.data);
-          setModel(data.data[0]?.id ?? "");
-          setState("ready");
+          const data = (await res.json()) as { data: Model[] }
+          if (!active) return
+          setModels(data.data)
+          setModel(data.data[0]?.id ?? "")
+          setState("ready")
         })
         .catch((err: Error) => {
-          if (!active) return;
-          setError(err.message);
-          setState("error");
-        });
-    }, 400);
+          if (!active) return
+          setError(err.message)
+          setState("error")
+        })
+    }, 400)
     return () => {
-      active = false;
-      clearTimeout(timer);
-    };
-  }, [apiKey]);
+      active = false
+      clearTimeout(timer)
+    }
+  }, [apiKey])
 
   useEffect(() => {
     if (responseRef.current) {
-      responseRef.current.scrollTop = responseRef.current.scrollHeight;
+      responseRef.current.scrollTop = responseRef.current.scrollHeight
     }
-  }, [responseText]);
+  }, [responseText])
 
   useEffect(() => {
     return () => {
-      abortRef.current?.abort();
-    };
-  }, []);
+      abortRef.current?.abort()
+    }
+  }, [])
 
   async function submit(event: FormEvent) {
-    event.preventDefault();
-    setSubmitting(true);
-    setError("");
-    setResponseText("");
-    setElapsed(null);
+    event.preventDefault()
+    setSubmitting(true)
+    setError("")
+    setResponseText("")
+    setElapsed(null)
 
-    const controller = new AbortController();
-    abortRef.current = controller;
-    const start = performance.now();
+    const controller = new AbortController()
+    abortRef.current = controller
+    const start = performance.now()
 
     try {
       const response = await fetch("/api/v1/chat/completions", {
@@ -110,87 +110,74 @@ export default function PlaygroundPage() {
             { role: "user", content: message },
           ],
           max_tokens: 256,
-          stream: true,
+          stream: false,
         }),
         signal: controller.signal,
-      });
+      })
 
       if (!response.ok) {
         const data = (await response.json().catch(() => null)) as
-          | { error?: { message?: string } }
-          | null;
-        throw new Error(data?.error?.message ?? "Request gagal.");
-      }
-      if (!response.body) throw new Error("Response kosong.");
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let output = "";
-
-      while (true) {
-        const chunk = await reader.read();
-        if (chunk.done) break;
-        buffer += decoder.decode(chunk.value, { stream: true });
-
-        const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed || !trimmed.startsWith("data:")) continue;
-          const payload = trimmed.slice(5).trim();
-          if (payload === "[DONE]") continue;
-          try {
-            const json = JSON.parse(payload) as {
-              choices?: { delta?: { content?: string } }[];
-            };
-            const delta = json.choices?.[0]?.delta?.content;
-            if (delta) {
-              output += delta;
-              setResponseText(output);
-            }
-          } catch {
-            // ignore partial/invalid JSON
-          }
-        }
+          | { error?: { message?: string } | string }
+          | null
+        const message =
+          typeof data?.error === "string"
+            ? data.error
+            : data?.error?.message
+        throw new Error(message ?? "Request gagal.")
       }
 
-      setElapsed(performance.now() - start);
+      // Non-streaming: parse JSON biasa
+      const data = (await response.json()) as {
+        choices?: { message?: { content?: string } }[]
+        error?: { message?: string } | string
+      }
+
+      // Kalau backend balikin error via body (walau status 200)
+      if (data.error) {
+        const msg =
+          typeof data.error === "string"
+            ? data.error
+            : data.error.message
+        throw new Error(msg ?? "Request gagal.")
+      }
+
+      const output = data.choices?.[0]?.message?.content ?? ""
+      setResponseText(output)
+      setElapsed(performance.now() - start)
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
-        setElapsed(performance.now() - start);
+        setElapsed(performance.now() - start)
       } else {
-        setError(err instanceof Error ? err.message : "Request gagal.");
+        setError(err instanceof Error ? err.message : "Request gagal.")
       }
     } finally {
-      setSubmitting(false);
-      abortRef.current = null;
+      setSubmitting(false)
+      abortRef.current = null
     }
   }
 
   function stop() {
-    abortRef.current?.abort();
+    abortRef.current?.abort()
   }
 
   async function copyResponse() {
     try {
-      await navigator.clipboard.writeText(responseText);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1600);
+      await navigator.clipboard.writeText(responseText)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1600)
     } catch {
-      setCopied(false);
+      setCopied(false)
     }
   }
 
   function clearResponse() {
-    setResponseText("");
-    setElapsed(null);
-    setError("");
+    setResponseText("")
+    setElapsed(null)
+    setError("")
   }
 
   const inputClass =
-    "mt-2 min-h-11 w-full rounded-xl border border-[color:var(--pk-line-2)] bg-[#0b1626] px-3.5 text-sm text-[color:var(--pk-text)] outline-none transition-colors placeholder:text-[color:var(--pk-text-mute)] focus:border-[color:var(--pk-accent)] focus:ring-2 focus:ring-[color:var(--pk-accent)]/25";
+    "mt-2 min-h-11 w-full rounded-xl border border-[color:var(--pk-line-2)] bg-[#0b1626] px-3.5 text-sm text-[color:var(--pk-text)] outline-none transition-colors placeholder:text-[color:var(--pk-text-mute)] focus:border-[color:var(--pk-accent)] focus:ring-2 focus:ring-[color:var(--pk-accent)]/25"
 
   return (
     <div className="relative min-h-screen text-[color:var(--pk-text)]">
@@ -203,8 +190,7 @@ export default function PlaygroundPage() {
             Playground
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-6 text-[color:var(--pk-text-dim)]">
-            Uji chat completions dengan konfigurasi sederhana. Streaming
-            diaktifkan otomatis.
+            Uji chat completions dengan konfigurasi sederhana.
           </p>
         </div>
       </header>
@@ -344,8 +330,8 @@ export default function PlaygroundPage() {
               <div>
                 <h2 className="text-base font-semibold">Response</h2>
                 <p className="mt-1 text-xs text-[color:var(--pk-text-mute)]">
-                  {submitting && responseText
-                    ? "Streaming..."
+                  {submitting
+                    ? "Menunggu response..."
                     : elapsed
                       ? `Selesai dalam ${(elapsed / 1000).toFixed(2)}s`
                       : "Response akan tampil di sini."}
@@ -386,12 +372,7 @@ export default function PlaygroundPage() {
               className="pk-scroll pk-terminal mt-4 min-h-[24rem] max-w-full flex-1 overflow-auto whitespace-pre-wrap break-words rounded-xl border border-[color:var(--pk-line)] p-4 font-mono text-[13px] leading-6 text-[color:var(--pk-text)]"
             >
               {responseText ? (
-                <>
-                  {responseText}
-                  {submitting && (
-                    <span className="ml-0.5 inline-block h-4 w-1.5 translate-y-0.5 animate-pulse bg-[color:var(--pk-accent)] align-middle" />
-                  )}
-                </>
+                responseText
               ) : submitting ? (
                 <span className="text-[color:var(--pk-text-mute)]">
                   Menunggu response...
@@ -416,5 +397,5 @@ export default function PlaygroundPage() {
         </div>
       </div>
     </div>
-  );
+  )
 }
