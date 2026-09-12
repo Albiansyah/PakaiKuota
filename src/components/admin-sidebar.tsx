@@ -15,11 +15,9 @@ import {
   Megaphone,
   Menu,
   MessageSquare,
-  Package,
   Palette,
   Settings,
   Shield,
-  ShieldCheck,
   User,
   Users,
   WalletCards,
@@ -35,15 +33,15 @@ const groups = [
       { href: "/admin/ringkasan", label: "Ringkasan", icon: LayoutDashboard },
     ],
   },
-{
-  label: "Manajemen",
-  items: [
-    { href: "/admin/users", label: "Users", icon: Users },
-    { href: "/admin/transactions", label: "Transaksi", icon: WalletCards },
-    { href: "/admin/refunds", label: "Refund queue", icon: WalletCards },
-    { href: "/admin/feedback", label: "Feedback", icon: MessageSquare },
-  ],
-},
+  {
+    label: "Manajemen",
+    items: [
+      { href: "/admin/users", label: "Users", icon: Users },
+      { href: "/admin/transactions", label: "Transaksi", icon: WalletCards },
+      { href: "/admin/refunds", label: "Refund queue", icon: WalletCards },
+      { href: "/admin/feedback", label: "Feedback", icon: MessageSquare },
+    ],
+  },
   {
     label: "Keuangan",
     items: [
@@ -56,7 +54,6 @@ const groups = [
       { href: "/admin/branding", label: "Branding & SEO", icon: Palette },
       { href: "/admin/newapi-config", label: "NewAPI config", icon: Settings },
       { href: "/admin/models", label: "Model & pricing", icon: BarChart3 },
-      { href: "/admin/token-packages", label: "Token packages", icon: Package },
       { href: "/admin/marketing", label: "Marketing banners", icon: Megaphone },
     ],
   },
@@ -106,9 +103,6 @@ export function AdminSidebar({
 
   const allCollapsed = groups.every((g) => collapsed[g.label])
 
-  /* ------------------------------------------------------------
-     Fetch awaiting verification count
-     ------------------------------------------------------------ */
   const fetchAwaitingCount = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/transactions/pending-count", {
@@ -118,7 +112,7 @@ export function AdminSidebar({
       const data = (await res.json()) as { count?: number }
       setAwaitingCount(data.count ?? 0)
     } catch {
-      // silent
+      /* silent */
     }
   }, [])
 
@@ -187,9 +181,6 @@ export function AdminSidebar({
     }
   }
 
-  /* ------------------------------------------------------------
-     isActive — handle path + filter query
-     ------------------------------------------------------------ */
   function isActive(href: string) {
     const [itemPath, itemQuery = ""] = href.split("?")
     if (pathname !== itemPath) return false
@@ -197,10 +188,8 @@ export function AdminSidebar({
     const itemParams = new URLSearchParams(itemQuery)
     const itemFilter = itemParams.get("filter")
 
-    // Item dengan filter (Verify Queue vs Transaksi biasa)
     if (itemFilter) return activeFilter === itemFilter
 
-    // Item tanpa filter — aktif hanya kalau tidak ada filter di URL
     return !activeFilter
   }
 
@@ -211,7 +200,7 @@ export function AdminSidebar({
     try {
       await fetch("/api/auth/logout", { method: "POST" })
     } catch {
-      // tetap lanjut redirect
+      /* tetap lanjut redirect */
     }
     window.location.href = "/"
   }

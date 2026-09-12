@@ -19,8 +19,10 @@ import {
   Terminal,
 } from "lucide-react"
 
+const API_BASE_URL = "https://api.pakaikuota.cloud"
+
 const SNIPPETS = {
-  curl: `curl https://pakai-kuota.vercel.app/api/v1/chat/completions \\
+  curl: `curl ${API_BASE_URL}/v1/chat/completions \\
   -H "Authorization: Bearer $PK_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -33,7 +35,7 @@ const SNIPPETS = {
 
   python: `import requests
 
-url = "https://pakai-kuota.vercel.app/api/v1/chat/completions"
+url = "${API_BASE_URL}/v1/chat/completions"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -48,14 +50,14 @@ data = {
 response = requests.post(url, headers=headers, json=data)
 print(response.json())`,
 
-  node: `const response = await fetch("https://pakai-kuota.vercel.app/api/v1/chat/completions", {
+  node: `const response = await fetch("${API_BASE_URL}/v1/chat/completions", {
   method: "POST",
   headers: {
     "Authorization": \`Bearer \${process.env.PK_KEY}\`,
     "Content-Type": "application/json"
   },
   body: JSON.stringify({
-    model: "nvidia-nemotron-3-ultra-550b-a55bfree",
+    model: "gpt-4o-mini",
     messages: [{ role: "user", content: "Halo!" }]
   })
 });
@@ -73,7 +75,7 @@ import (
 )
 
 func main() {
-	url := "https://pakai-kuota.vercel.app/api/v1/chat/completions"
+	url := "${API_BASE_URL}/v1/chat/completions"
 
 	payload := map[string]interface{}{
 		"model": "gpt-4o-mini",
@@ -96,7 +98,7 @@ func main() {
 
   php: `<?php
 
-$url = "https://pakai-kuota.vercel.app/api/v1/chat/completions";
+$url = "${API_BASE_URL}/v1/chat/completions";
 
 $data = [
     "model" => "gpt-4o-mini",
@@ -123,10 +125,22 @@ print_r($result);`,
 
 const MODELS = [
   {
-    name: "nvidia-nemotron-3-ultra-550b-a55bfree",
-    description: "Model gratis yang sudah terhubung ke gateway",
-    tier: "Gratis",
-    price: "Rp 0",
+    name: "gpt-4o-mini",
+    description: "OpenAI GPT family — cepat dan hemat untuk chat umum.",
+    tier: "GPT",
+    price: "Sesuai pemakaian",
+  },
+  {
+    name: "claude-3-5-sonnet",
+    description: "Anthropic Claude family — bagus untuk analisis dan reasoning.",
+    tier: "Claude",
+    price: "Sesuai pemakaian",
+  },
+  {
+    name: "glm-4-flash",
+    description: "Zhipu GLM family — ringan, cocok untuk task pendek.",
+    tier: "GLM",
+    price: "Sesuai pemakaian",
   },
 ]
 
@@ -134,12 +148,12 @@ const STEPS = [
   {
     icon: Rocket,
     title: "1. Daftar Akun",
-    description: "Daftar di PakaiKuota.id dan verifikasi email",
+    description: "Daftar di pakaikuota.cloud dan verifikasi email",
   },
   {
     icon: Key,
-    title: "2. Top-up Saldo",
-    description: "Top-up saldo menggunakan QRIS",
+    title: "2. Top Up Saldo",
+    description: "Top up saldo via QRIS, biaya dipotong per pemakaian",
   },
   {
     icon: BookOpen,
@@ -157,6 +171,7 @@ const SECTIONS = [
   { id: "quickstart", label: "Mulai Cepat" },
   { id: "setup", label: "Setup API" },
   { id: "format", label: "Format Request" },
+  { id: "ratelimit", label: "Rate Limit" },
   { id: "errors", label: "Error Umum" },
   { id: "examples", label: "Contoh Code" },
   { id: "models", label: "Model Tersedia" },
@@ -208,11 +223,6 @@ export default function DocsPage() {
     return () => observer.disconnect()
   }, [])
 
-  /* ============================================================
-     Back link — kondisional:
-     - Sudah login → /dashboard
-     - Belum login → /
-     ============================================================ */
   const backHref = user ? "/dashboard" : "/"
   const backLabel = user ? "Kembali ke dashboard" : "Kembali ke halaman utama"
   const BackIcon = user ? LayoutDashboard : ArrowLeft
@@ -228,7 +238,6 @@ export default function DocsPage() {
         </div>
       </div>
 
-      {/* ============ HEADER ============ */}
       <header className="sticky top-0 z-40 border-b border-(--pk-line) bg-[#050b16]/85 backdrop-blur-md">
         <div className="mx-auto flex min-h-16 w-full max-w-7xl items-center justify-between gap-4 px-5 sm:px-8">
           <Link
@@ -245,7 +254,6 @@ export default function DocsPage() {
           </Link>
 
           <nav className="flex items-center gap-2 text-sm">
-            {/* Auth-aware back button */}
             {!userLoading && (
               <Link
                 href={backHref}
@@ -259,7 +267,6 @@ export default function DocsPage() {
               </Link>
             )}
 
-            {/* Auth buttons (only when not logged in) */}
             {!userLoading && !user && (
               <Link
                 href="/signup"
@@ -269,7 +276,6 @@ export default function DocsPage() {
               </Link>
             )}
 
-            {/* When logged in, show a secondary shortcut to dashboard if needed */}
             {!userLoading && user && (
               <Link
                 href="/dashboard"
@@ -283,7 +289,6 @@ export default function DocsPage() {
       </header>
 
       <div className="mx-auto grid w-full max-w-7xl gap-10 px-5 py-10 sm:px-8 lg:grid-cols-[14rem_1fr]">
-        {/* ============ SIDEBAR ============ */}
         <aside className="hidden lg:block">
           <nav
             aria-label="Navigasi dokumentasi"
@@ -336,13 +341,12 @@ export default function DocsPage() {
                 href="/dashboard"
                 className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-(--pk-accent) hover:underline"
               >
-                Buka dashboard →
+                Buka dashboard
               </Link>
             </div>
           </nav>
         </aside>
 
-        {/* ============ MOBILE TOC ============ */}
         <div className="pk-scroll -mx-5 flex gap-2 overflow-x-auto px-5 pb-1 lg:hidden">
           {SECTIONS.map((section) => {
             const active = activeSection === section.id
@@ -362,9 +366,7 @@ export default function DocsPage() {
           })}
         </div>
 
-        {/* ============ CONTENT ============ */}
         <div ref={contentRef} className="min-w-0 space-y-6">
-          {/* Hero */}
           <section className="pk-panel pk-inview p-6 sm:p-8">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-(--pk-accent)">
               Dokumentasi
@@ -383,15 +385,14 @@ export default function DocsPage() {
                 OpenAI-compatible
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-(--pk-line-2) bg-[#0b1626] px-2.5 py-1 text-(--pk-text-dim)">
-                Streaming
+                Bayar per pemakaian
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-(--pk-line-2) bg-[#0b1626] px-2.5 py-1 text-(--pk-text-dim)">
-                Bayar per token
+                GPT · Claude · GLM
               </span>
             </div>
           </section>
 
-          {/* Quickstart */}
           <section id="quickstart" className="pk-panel pk-inview p-6 sm:p-8">
             <div className="flex items-center gap-2">
               <Rocket size={16} className="text-(--pk-accent)" />
@@ -424,7 +425,6 @@ export default function DocsPage() {
             </div>
           </section>
 
-          {/* Setup */}
           <section id="setup" className="pk-panel pk-inview p-6 sm:p-8">
             <h2 className="text-lg font-semibold tracking-[-0.02em]">
               Setup API
@@ -445,10 +445,13 @@ export default function DocsPage() {
                   saldo Rupiah setelah provider berhasil merespons.
                 </>,
                 <>
-                  Gunakan slug model yang tersedia. Model gratis saat ini:{" "}
-                  <code className="rounded-md border border-(--pk-line-2) bg-[#0b1626] px-1.5 py-0.5 font-mono text-xs text-(--pk-accent)">
-                    nvidia-nemotron-3-ultra-550b-a55bfree
-                  </code>
+                  Gunakan slug model yang tersedia di halaman{" "}
+                  <Link
+                    href="/pricing"
+                    className="font-medium text-(--pk-accent) hover:underline"
+                  >
+                    Harga & Model
+                  </Link>
                   .
                 </>,
               ].map((item, i) => (
@@ -465,13 +468,13 @@ export default function DocsPage() {
                   Endpoint
                 </p>
                 <code className="mt-2 block break-all font-mono text-sm text-(--pk-text)">
-                  POST /api/v1/chat/completions
+                  POST /v1/chat/completions
                 </code>
                 <p className="mt-3 text-[11px] text-(--pk-text-mute)">
                   Production:
                 </p>
                 <code className="mt-1 block break-all font-mono text-[11px] text-(--pk-text-dim)">
-                  https://pakai-kuota.vercel.app/api/v1/chat/completions
+                  {API_BASE_URL}/v1/chat/completions
                 </code>
               </div>
               <div className="rounded-xl border border-(--pk-line) bg-[#0b1626]/60 p-4">
@@ -479,7 +482,7 @@ export default function DocsPage() {
                   Daftar model
                 </p>
                 <code className="mt-2 block font-mono text-sm text-(--pk-text)">
-                  GET /api/v1/models
+                  GET /v1/models
                 </code>
                 <p className="mt-3 text-[11px] leading-5 text-(--pk-text-dim)">
                   Dengan header API key. Hanya model yang diaktifkan admin yang
@@ -489,7 +492,6 @@ export default function DocsPage() {
             </div>
           </section>
 
-          {/* Format */}
           <section id="format" className="pk-panel pk-inview p-6 sm:p-8">
             <h2 className="text-lg font-semibold tracking-[-0.02em]">
               Format Request
@@ -529,17 +531,23 @@ export default function DocsPage() {
                 </>,
                 <>
                   <code className="rounded-md border border-(--pk-line-2) bg-[#0b1626] px-1.5 py-0.5 font-mono text-xs text-(--pk-accent)">
-                    stream
-                  </code>
-                  ,{" "}
-                  <code className="rounded-md border border-(--pk-line-2) bg-[#0b1626] px-1.5 py-0.5 font-mono text-xs text-(--pk-accent)">
                     temperature
-                  </code>
-                  , dan{" "}
+                  </code>{" "}
+                  dan{" "}
                   <code className="rounded-md border border-(--pk-line-2) bg-[#0b1626] px-1.5 py-0.5 font-mono text-xs text-(--pk-accent)">
                     top_p
                   </code>{" "}
                   opsional.
+                </>,
+                <>
+                  <code className="rounded-md border border-(--pk-line-2) bg-[#0b1626] px-1.5 py-0.5 font-mono text-xs text-(--pk-accent)">
+                    stream
+                  </code>{" "}
+                  belum tersedia. Gunakan{" "}
+                  <code className="font-mono text-xs text-(--pk-text)">
+                    false
+                  </code>{" "}
+                  atau omit field ini.
                 </>,
                 <>
                   Simpan API key di environment variable server, jangan di
@@ -560,7 +568,43 @@ export default function DocsPage() {
             </p>
           </section>
 
-          {/* Errors */}
+          <section id="ratelimit" className="pk-panel pk-inview p-6 sm:p-8">
+            <h2 className="text-lg font-semibold tracking-[-0.02em]">
+              Rate Limit
+            </h2>
+            <p className="mt-1 text-sm text-(--pk-text-dim)">
+              Batas request per menit untuk mencegah abuse.
+            </p>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              {[
+                { label: "Per API Key", value: "10 req/menit" },
+                { label: "Per User", value: "20 req/menit" },
+                { label: "Per IP", value: "30 req/menit" },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-xl border border-(--pk-line) bg-[#0b1626]/60 p-4"
+                >
+                  <p className="text-xs font-semibold uppercase tracking-widest text-(--pk-text-mute)">
+                    {item.label}
+                  </p>
+                  <p className="mt-2 font-mono text-lg font-semibold text-(--pk-text)">
+                    {item.value}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <p className="mt-6 text-sm leading-6 text-(--pk-text-dim)">
+              Kalau melewati batas, endpoint mengembalikan{" "}
+              <code className="rounded-md border border-(--pk-line-2) bg-[#0b1626] px-1.5 py-0.5 font-mono text-xs text-[#fca5a5]">
+                429 RATE_LIMITED
+              </code>
+              . Tunggu beberapa saat lalu coba lagi.
+            </p>
+          </section>
+
           <section id="errors" className="pk-panel pk-inview p-6 sm:p-8">
             <h2 className="text-lg font-semibold tracking-[-0.02em]">
               Error Umum
@@ -577,6 +621,11 @@ export default function DocsPage() {
                   tone: "err",
                 },
                 {
+                  code: "402 INSUFFICIENT_BALANCE",
+                  desc: "Saldo tidak mencukupi untuk request ini. Top up dulu.",
+                  tone: "err",
+                },
+                {
                   code: "403 MODEL_DISABLED",
                   desc: "Model belum diaktifkan admin.",
                   tone: "warn",
@@ -588,12 +637,12 @@ export default function DocsPage() {
                 },
                 {
                   code: "429 RATE_LIMITED",
-                  desc: "Batas request tercapai.",
+                  desc: "Batas request tercapai. Tunggu lalu coba lagi.",
                   tone: "warn",
                 },
                 {
-                  code: "402/502 UPSTREAM_ERROR",
-                  desc: "Provider tidak memiliki channel, kredit, atau mengembalikan error.",
+                  code: "502 UPSTREAM_ERROR",
+                  desc: "Provider upstream sedang bermasalah. Coba lagi nanti.",
                   tone: "err",
                 },
               ].map((item) => (
@@ -616,7 +665,6 @@ export default function DocsPage() {
             </div>
           </section>
 
-          {/* Examples */}
           <section id="examples" className="pk-panel pk-inview p-6 sm:p-8">
             <h2 className="text-lg font-semibold tracking-[-0.02em]">
               Contoh Code
@@ -674,13 +722,13 @@ export default function DocsPage() {
             </div>
           </section>
 
-          {/* Models */}
           <section id="models" className="pk-panel pk-inview p-6 sm:p-8">
             <h2 className="text-lg font-semibold tracking-[-0.02em]">
               Model yang Tersedia
             </h2>
             <p className="mt-1 text-sm text-(--pk-text-dim)">
-              Daftar model yang dapat diakses via API.
+              Contoh model yang dapat diakses via API. Cek dashboard atau
+              halaman harga untuk daftar lengkap dan harga per model.
             </p>
 
             <div className="mt-6 space-y-3">
@@ -708,11 +756,8 @@ export default function DocsPage() {
                     </div>
                   </div>
                   <div className="text-right sm:shrink-0">
-                    <p className="font-mono text-base font-semibold text-(--pk-accent)">
+                    <p className="font-mono text-xs font-semibold text-(--pk-accent)">
                       {model.price}
-                    </p>
-                    <p className="text-[10px] uppercase tracking-widest text-(--pk-text-mute)">
-                      per 1M tokens
                     </p>
                   </div>
                 </div>
@@ -720,9 +765,9 @@ export default function DocsPage() {
             </div>
 
             <p className="mt-6 text-center text-sm text-(--pk-text-dim)">
-              Lihat semua model di{" "}
+              Lihat semua model dan harga per 1K token di{" "}
               <Link
-                href="/#harga"
+                href="/pricing"
                 className="font-medium text-(--pk-accent) hover:underline"
               >
                 halaman harga
@@ -730,7 +775,6 @@ export default function DocsPage() {
             </p>
           </section>
 
-          {/* CTA bawah */}
           <section className="pk-panel pk-featured pk-inview relative overflow-hidden p-6 text-center sm:p-10">
             <div
               aria-hidden
@@ -741,7 +785,7 @@ export default function DocsPage() {
                 Siap mulai?
               </h2>
               <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-(--pk-text-dim)">
-                Buat akun, isi kuota, dan kirim request pertama kamu dalam
+                Buat akun, top up saldo, dan kirim request pertama kamu dalam
                 hitungan menit.
               </p>
               <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">

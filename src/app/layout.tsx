@@ -31,23 +31,30 @@ export async function generateMetadata(): Promise<Metadata> {
     if (!settings) throw new Error("No settings")
 
     return {
+      metadataBase: new URL(baseUrl),
       title: {
         default:
           settings.seo_default_title ??
-          `${settings.brand_name ?? "PakaiKuota"} — API LLM, Bayar dengan Rupiah`,
+          `${settings.brand_name ?? "PakaiKuota"} — 1 Saldo untuk GPT, Claude & GLM`,
         template:
           settings.seo_title_template ??
           `%s — ${settings.brand_name ?? "PakaiKuota"}`,
       },
       description:
-        settings.seo_default_description ?? settings.brand_description,
+        settings.seo_default_description ??
+        settings.brand_description ??
+        "Top up saldo pakai QRIS, akses API GPT, Claude, dan GLM dari satu saldo. Bayar sesuai pemakaian token aktual, tanpa kartu kredit luar negeri.",
       keywords: settings.seo_keywords
         ?.split(",")
         .map((k) => k.trim())
         .filter(Boolean),
+      alternates: {
+        canonical: "/",
+      },
       openGraph: {
         title: settings.seo_default_title,
         description: settings.seo_default_description,
+        url: baseUrl,
         images: settings.og_image_url ? [settings.og_image_url] : [],
         siteName: settings.brand_name,
         type: "website",
@@ -64,14 +71,25 @@ export async function generateMetadata(): Promise<Metadata> {
         : { icon: "/favicon.ico" },
     }
   } catch {
-    // Fallback default
     return {
+      metadataBase: new URL(baseUrl),
       title: {
-        default: "PakaiKuota — API LLM, Bayar dengan Rupiah",
+        default: "PakaiKuota — 1 Saldo untuk GPT, Claude & GLM",
         template: "%s — PakaiKuota",
       },
       description:
-        "Satu API key untuk model LLM yang kamu butuhkan. Isi kuota lewat QRIS atau VA.",
+        "Top up saldo pakai QRIS, akses API GPT, Claude, dan GLM dari satu saldo. Bayar sesuai pemakaian token aktual, tanpa kartu kredit luar negeri.",
+      alternates: {
+        canonical: "/",
+      },
+      openGraph: {
+        url: baseUrl,
+        siteName: "PakaiKuota",
+        type: "website",
+        title: "PakaiKuota — 1 Saldo untuk GPT, Claude & GLM",
+        description:
+          "Top up saldo pakai QRIS, akses API GPT, Claude, dan GLM dari satu saldo. Bayar sesuai pemakaian token aktual.",
+      },
       icons: { icon: "/favicon.ico" },
     }
   }

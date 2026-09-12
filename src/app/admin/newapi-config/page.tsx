@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
 import { useSupabase } from "@/components/providers/supabase-provider"
 import { toast } from "sonner"
 import {
@@ -10,11 +9,9 @@ import {
   Gauge,
   KeyRound,
   Loader2,
-  Package,
   Plug,
   Save,
   Server,
-  Sparkles,
   Wallet,
 } from "lucide-react"
 
@@ -37,7 +34,6 @@ const panelClass = "pk-panel pk-inview p-6"
 
 export default function NewAPIConfigPage() {
   const { supabase } = useSupabase()
-  const router = useRouter()
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -174,7 +170,6 @@ export default function NewAPIConfigPage() {
       </header>
 
       <div className="mx-auto max-w-5xl space-y-6 px-5 py-8 sm:px-8">
-        {/* Endpoint & Model */}
         <section className={panelClass}>
           <div className="flex items-start gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-(--pk-line-2) bg-[#0b1626]">
@@ -302,7 +297,6 @@ export default function NewAPIConfigPage() {
           </div>
         </section>
 
-        {/* Rate Limiting */}
         <section className={panelClass}>
           <div className="flex items-start gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-(--pk-line-2) bg-[#0b1626]">
@@ -374,32 +368,6 @@ export default function NewAPIConfigPage() {
           </div>
         </section>
 
-        {/* Paket Token */}
-        <section className={panelClass}>
-          <div className="flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-(--pk-line-2) bg-[#0b1626]">
-              <Package size={18} className="text-(--pk-accent)" />
-            </span>
-            <div>
-              <h2 className="text-base font-semibold">Paket Token</h2>
-              <p className="mt-1 text-sm text-(--pk-text-dim)">
-                Kelola paket token yang tersedia untuk dijual.
-              </p>
-            </div>
-          </div>
-          <div className="mt-6">
-            <button
-              type="button"
-              onClick={() => router.push("/admin/token-packages")}
-              className="pk-btn-ghost inline-flex min-h-10 items-center gap-2 px-4 text-sm font-medium"
-            >
-              <Sparkles size={14} />
-              Kelola Paket Token
-            </button>
-          </div>
-        </section>
-
-        {/* Test Result */}
         {testResult && (
           <div
             className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-sm ${
@@ -429,7 +397,6 @@ export default function NewAPIConfigPage() {
           </div>
         )}
 
-        {/* Actions */}
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"

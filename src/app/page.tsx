@@ -6,8 +6,11 @@ import { Navbar } from "@/components/layout/navbar"
 import { Footer } from "@/components/layout/footer"
 import { PromoBar } from "@/components/promo-bar"
 import { WhatsAppCs } from "@/components/whatsapp-cs"
+import { TOPUP_PACKAGES, formatRupiah } from "@/lib/pricing-config"
 import {
   AlertCircle,
+  ArrowRight,
+  Check,
   CheckCircle2,
   Loader2,
   MessageSquare,
@@ -15,34 +18,20 @@ import {
   Send,
   Star,
   Trash2,
+  Wallet,
 } from "lucide-react"
 
-const tiers = [
-  {
-    name: "Standard",
-    detail: "Untuk eksperimen dan penggunaan rutin.",
-    price: "Lihat harga setelah masuk",
-    featured: false,
-  },
-  {
-    name: "Premium",
-    detail: "Untuk workflow yang butuh model lebih kuat.",
-    price: "Lihat harga setelah masuk",
-    featured: true,
-  },
-  {
-    name: "Ultra",
-    detail: "Untuk beban kerja dengan kebutuhan model tertinggi.",
-    price: "Lihat harga setelah masuk",
-    featured: false,
-  },
+const models = [
+  { name: "GPT", detail: "OpenAI GPT family" },
+  { name: "Claude", detail: "Anthropic Claude family" },
+  { name: "GLM", detail: "Zhipu GLM family" },
 ]
 
 const steps = [
   {
     no: "01",
-    title: "Isi kuota",
-    desc: "Pilih nominal dan selesaikan pembayaran melalui QRIS atau VA.",
+    title: "Top up saldo",
+    desc: "Pilih nominal dan bayar via QRIS. Saldo masuk dalam Rupiah.",
   },
   {
     no: "02",
@@ -52,7 +41,7 @@ const steps = [
   {
     no: "03",
     title: "Kirim request",
-    desc: "Gunakan endpoint chat completions dengan format yang familiar.",
+    desc: "Pakai endpoint chat completions. Saldo berkurang sesuai pemakaian.",
   },
 ]
 
@@ -71,7 +60,6 @@ const inputClass =
 export default function Home() {
   return (
     <main className="relative min-h-screen overflow-x-hidden text-(--pk-text)">
-      {/* ============ LATAR GLOBAL ============ */}
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,#0f1e38_0%,#050b16_55%,#03070e_100%)]" />
         <div className="pk-grid absolute inset-0" />
@@ -85,55 +73,54 @@ export default function Home() {
 
       <PromoBar />
 
-      {/* ============ HERO ============ */}
       <section className="relative">
-        <div className="mx-auto grid w-full max-w-7xl gap-14 px-5 pb-20 pt-20 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:pb-28 lg:pt-28">
+        <div className="mx-auto grid w-full max-w-7xl gap-14 px-5 pb-20 pt-12 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:pb-28 lg:pt-16">
           <div className="min-w-0">
-            <div className="pk-reveal inline-flex max-w-full items-center gap-2.5 rounded-full border border-[color:var(--pk-line-2)] bg-[#0b1626]/70 px-3.5 py-1.5 text-xs font-medium tracking-wide text-[color:var(--pk-text-dim)]">
+            <div className="pk-reveal inline-flex max-w-full items-center gap-2.5 rounded-full border border-(--pk-line-2) bg-[#0b1626]/70 px-3.5 py-1.5 text-xs font-medium tracking-wide text-(--pk-text-dim)">
               <span className="pk-dot shrink-0" aria-hidden />
               <span className="truncate">
-                API LLM sesuai kebutuhanmu, kapanpun.
+                Top up saldo Rupiah. Bayar sesuai pemakaian.
               </span>
             </div>
 
             <h1 className="pk-reveal pk-d1 mt-6 max-w-3xl text-4xl font-semibold leading-[1.05] tracking-[-0.045em] sm:text-6xl">
-              API LLM paling
+              Satu saldo.
               <br />
-              murah se{" "}
-              <span className="pk-gradient-text">Indonesia</span>.
+              Akses berbagai model{" "}
+              <span className="pk-gradient-text">Terbaru</span>.
             </h1>
 
-            <p className="pk-reveal pk-d2 mt-6 max-w-xl text-base leading-7 text-[color:var(--pk-text-dim)] sm:text-lg">
-              Satu API key untuk model LLM yang kamu butuhkan. Isi kuota lewat
-              QRIS atau VA, lalu pakai endpoint chat completions yang familiar.
+            <p className="pk-reveal pk-d2 mt-6 max-w-xl text-base leading-7 text-(--pk-text-dim) sm:text-lg">
+              Top up sekali, pakai untuk GPT, Claude, dan GLM. Biaya dipotong
+              otomatis dari saldo sesuai token yang benar-benar kepakai.
             </p>
 
             <div className="pk-reveal pk-d3 mt-9 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/signup"
-                className="pk-btn-primary inline-flex min-h-12 items-center justify-center px-6 text-sm"
+                className="pk-btn-primary inline-flex min-h-12 items-center justify-center gap-2 px-6 text-sm"
               >
-                Coba Gratis
+                <Wallet size={14} />
+                Top Up Saldo
               </Link>
               <Link
                 href="#cara-kerja"
-                className="pk-btn-ghost inline-flex min-h-12 items-center justify-center px-6 text-sm font-medium"
+                className="pk-btn-ghost inline-flex min-h-12 items-center justify-center gap-2 px-6 text-sm font-medium"
               >
-                Lihat alurnya →
+                Lihat alurnya
+                <ArrowRight size={14} />
               </Link>
             </div>
 
-            <dl className="pk-reveal pk-d4 mt-12 grid max-w-lg grid-cols-3 gap-3 border-t border-[color:var(--pk-line)] pt-6 sm:gap-4">
+            <dl className="pk-reveal pk-d4 mt-12 grid max-w-lg grid-cols-3 gap-3 border-t border-(--pk-line) pt-6 sm:gap-4">
               <div className="min-w-0">
-                <dt className="text-[10px] uppercase tracking-wider text-[color:var(--pk-text-mute)] sm:text-[11px] sm:tracking-widest">
+                <dt className="text-[10px] uppercase tracking-wider text-(--pk-text-mute) sm:text-[11px] sm:tracking-widest">
                   Pembayaran
                 </dt>
-                <dd className="mt-1 truncate text-sm font-medium">
-                  QRIS &amp; VA
-                </dd>
+                <dd className="mt-1 truncate text-sm font-medium">QRIS</dd>
               </div>
               <div className="min-w-0">
-                <dt className="text-[10px] uppercase tracking-wider text-[color:var(--pk-text-mute)] sm:text-[11px] sm:tracking-widest">
+                <dt className="text-[10px] uppercase tracking-wider text-(--pk-text-mute) sm:text-[11px] sm:tracking-widest">
                   Endpoint
                 </dt>
                 <dd className="mt-1 truncate text-sm font-medium">
@@ -141,61 +128,62 @@ export default function Home() {
                 </dd>
               </div>
               <div className="min-w-0">
-                <dt className="text-[10px] uppercase tracking-wider text-[color:var(--pk-text-mute)] sm:text-[11px] sm:tracking-widest">
+                <dt className="text-[10px] uppercase tracking-wider text-(--pk-text-mute) sm:text-[11px] sm:tracking-widest">
                   Billing
                 </dt>
                 <dd className="mt-1 truncate text-sm font-medium">
-                  Per token
+                  Per pemakaian
                 </dd>
               </div>
             </dl>
           </div>
 
-          <div className="pk-reveal pk-d2 relative min-w-0">
+          <div className="pk-reveal pk-d2 relative min-w-0 lg:pt-14">
             <div className="pk-panel pk-float overflow-hidden">
-              <div className="flex items-center gap-2 border-b border-[color:var(--pk-line)] px-4 py-3">
+              <div className="flex items-center gap-2 border-b border-(--pk-line) px-4 py-3">
                 <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
                 <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
                 <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
-                <span className="ml-3 truncate font-mono text-xs text-[color:var(--pk-text-mute)]">
+                <span className="ml-3 truncate font-mono text-xs text-(--pk-text-mute)">
                   request.sh
                 </span>
               </div>
 
               <div className="pk-terminal pk-scroll overflow-x-auto p-5 font-mono text-[12.5px] leading-6">
-                <div className="whitespace-pre text-[color:var(--pk-text-mute)]">
-                  <span className="text-[color:var(--pk-cyan)]">$</span> curl
+                <div className="whitespace-pre text-(--pk-text-mute)">
+                  <span className="text-(--pk-cyan)">$</span> curl
                   https://api.pakaikuota.cloud/v1/chat/completions \
                 </div>
-                <div className="whitespace-pre pl-4 text-[color:var(--pk-text-dim)]">
+                <div className="whitespace-pre pl-4 text-(--pk-text-dim)">
                   -H{" "}
-                  <span className="text-[color:var(--pk-accent-2)]">
+                  <span className="text-(--pk-accent-2)">
                     &quot;Authorization: Bearer $PK_KEY&quot;
                   </span>{" "}
                   \
                 </div>
-                <div className="whitespace-pre pl-4 text-[color:var(--pk-text-dim)]">
+                <div className="whitespace-pre pl-4 text-(--pk-text-dim)">
                   -d{" "}
-                  <span className="text-[color:var(--pk-accent-2)]">
-                    &apos;{`{ "model": "premium", "messages": [...] }`}&apos;
+                  <span className="text-(--pk-accent-2)">
+                    &apos;{`{ "model": "gpt-4o-mini", "messages": [...] }`}
+                    &apos;
                   </span>
                 </div>
                 <div className="mt-3 whitespace-pre text-[#7ee787]">
-                  ✓ 200 OK · 128 tokens · Rp 42
+                  ✓ 200 OK · saldo terpotong sesuai pemakaian aktual
                 </div>
               </div>
 
-              <ul className="divide-y divide-[color:var(--pk-line)] border-t border-[color:var(--pk-line)] text-sm">
+              <ul className="divide-y divide-(--pk-line) border-t border-(--pk-line) text-sm">
                 {[
-                  "Saldo tersedia sebelum request dikirim.",
-                  "Biaya dihitung dari pemakaian token aktual.",
+                  "Saldo dipotong sesuai pemakaian token aktual.",
+                  "Harga per model berbeda, biaya transparan.",
                   "Request gagal tidak memotong saldo.",
                 ].map((item) => (
                   <li
                     key={item}
-                    className="flex items-start gap-3 px-5 py-3 text-[color:var(--pk-text-dim)]"
+                    className="flex items-start gap-3 px-5 py-3 text-(--pk-text-dim)"
                   >
-                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--pk-accent)]" />
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-(--pk-accent)" />
                     <span className="min-w-0">{item}</span>
                   </li>
                 ))}
@@ -204,25 +192,24 @@ export default function Home() {
 
             <div
               aria-hidden
-              className="absolute -inset-6 -z-10 rounded-[32px] bg-[radial-gradient(closest-side,rgba(240,169,59,0.18),transparent_70%)]"
+              className="absolute -inset-6 -z-10 rounded-4xl bg-[radial-gradient(closest-side,rgba(240,169,59,0.18),transparent_70%)]"
             />
           </div>
         </div>
       </section>
 
-      {/* ============ CARA KERJA ============ */}
       <section
         id="cara-kerja"
         className="mx-auto grid w-full max-w-7xl gap-10 px-5 py-20 sm:px-8 lg:grid-cols-[0.7fr_1.3fr]"
       >
         <div className="pk-inview min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--pk-accent)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-(--pk-accent)">
             Alur penggunaan
           </p>
           <h2 className="mt-4 max-w-md text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
-            Dari saldo ke request, tanpa langkah tersembunyi.
+            Cara pakai API GPT, Claude, dan GLM dengan QRIS.
           </h2>
-          <p className="mt-4 max-w-sm text-sm leading-6 text-[color:var(--pk-text-dim)]">
+          <p className="mt-4 max-w-sm text-sm leading-6 text-(--pk-text-dim)">
             Tiga langkah saja. Semua status terlihat di dashboard.
           </p>
         </div>
@@ -239,7 +226,7 @@ export default function Home() {
                 <h3 className="text-base font-semibold sm:text-lg">
                   {step.title}
                 </h3>
-                <p className="mt-1.5 text-sm leading-6 text-[color:var(--pk-text-dim)]">
+                <p className="mt-1.5 text-sm leading-6 text-(--pk-text-dim)">
                   {step.desc}
                 </p>
               </div>
@@ -248,100 +235,187 @@ export default function Home() {
         </ol>
       </section>
 
-      {/* ============ HARGA ============ */}
       <section id="harga" className="relative">
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8">
           <div className="pk-inview flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
             <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--pk-accent)]">
-                Pilihan model
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-(--pk-accent)">
+                Top up saldo
               </p>
               <h2 className="mt-4 text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
-                Pilih tier sesuai beban kerja.
+                Pilih nominal saldo kamu.
               </h2>
             </div>
-            <p className="max-w-sm text-sm leading-6 text-[color:var(--pk-text-dim)]">
-              Harga dan model aktif tampil dari konfigurasi akun. Tidak ada
-              angka perkiraan yang disamarkan sebagai harga final.
+            <p className="max-w-sm text-sm leading-6 text-(--pk-text-dim)">
+              Semua saldo dalam Rupiah. Bisa dipakai untuk GPT, Claude, dan
+              GLM. Biaya per request dipotong sesuai pemakaian aktual.
             </p>
           </div>
 
-          <div className="mt-12 grid items-stretch gap-5 pt-4 lg:grid-cols-3">
-            {tiers.map((tier, i) => (
-              <article
-                key={tier.name}
-                className={`pk-panel pk-lift pk-inview relative flex h-full flex-col p-6 sm:p-7 ${
-                  tier.featured ? "pk-featured" : ""
-                }`}
-                style={{ animationDelay: `${i * 90}ms` }}
-              >
-                {tier.featured && (
-                  <span className="absolute right-5 top-5 rounded-full border border-[color:var(--pk-accent)]/40 bg-[color:var(--pk-accent)]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-[color:var(--pk-accent)]">
-                    Populer
-                  </span>
-                )}
+          <div className="mt-12 grid items-stretch gap-5 pt-4 sm:grid-cols-2 lg:grid-cols-4">
+            {TOPUP_PACKAGES.map((option, i) => {
+              const totalSaldo = option.amount + option.bonus
 
-                <h3 className="text-xl font-semibold">{tier.name}</h3>
-                <p className="mt-3 min-h-12 text-sm leading-6 text-[color:var(--pk-text-dim)]">
-                  {tier.detail}
-                </p>
+              return (
+                <article
+                  key={option.id}
+                  className={`pk-panel pk-lift pk-inview relative flex h-full flex-col p-6 ${
+                    option.featured ? "pk-featured" : ""
+                  }`}
+                  style={{ animationDelay: `${i * 90}ms` }}
+                >
+                  {option.featured && (
+                    <span className="absolute right-5 top-5 rounded-full border border-(--pk-accent)/40 bg-(--pk-accent)/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-(--pk-accent)">
+                      Populer
+                    </span>
+                  )}
 
-                <div className="mt-auto pt-8">
-                  <p className="border-t border-[color:var(--pk-line)] pt-4 font-mono text-sm text-[color:var(--pk-accent)]">
-                    {tier.price}
+                  <h3 className="text-sm font-semibold uppercase tracking-widest text-(--pk-text-dim)">
+                    {option.name}
+                  </h3>
+
+                  <div className="mt-4">
+                    <p className="font-mono text-3xl font-semibold tracking-[-0.02em] text-(--pk-text)">
+                      {formatRupiah(option.amount)}
+                    </p>
+                    {option.bonus > 0 && (
+                      <p className="mt-1 text-xs font-medium text-[#6ee7b7]">
+                        + Bonus {formatRupiah(option.bonus)}
+                      </p>
+                    )}
+                  </div>
+
+                  <p className="mt-4 text-sm leading-6 text-(--pk-text-dim)">
+                    {option.detail}
                   </p>
-                  <Link
-                    href="/signup"
-                    className={`mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-xl px-4 text-sm font-semibold ${
-                      tier.featured ? "pk-btn-primary" : "pk-btn-ghost"
-                    }`}
-                  >
-                    Pilih {tier.name}
-                  </Link>
-                </div>
-              </article>
-            ))}
+
+                  <ul className="mt-5 space-y-2 text-sm">
+                    <li className="flex items-start gap-2">
+                      <Check
+                        size={14}
+                        className="mt-0.5 shrink-0 text-[#6ee7b7]"
+                      />
+                      <span className="text-(--pk-text-dim)">
+                        Saldo {formatRupiah(totalSaldo)}
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Check
+                        size={14}
+                        className="mt-0.5 shrink-0 text-[#6ee7b7]"
+                      />
+                      <span className="text-(--pk-text-dim)">
+                        Akses GPT, Claude, GLM
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Check
+                        size={14}
+                        className="mt-0.5 shrink-0 text-[#6ee7b7]"
+                      />
+                      <span className="text-(--pk-text-dim)">
+                        Bayar per pemakaian
+                      </span>
+                    </li>
+                  </ul>
+
+                  <div className="mt-auto pt-6">
+                    <Link
+                      href={`/dashboard/topup?package=${option.id}`}
+                      className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold ${
+                        option.featured ? "pk-btn-primary" : "pk-btn-ghost"
+                      }`}
+                    >
+                      Top Up Sekarang
+                      <ArrowRight size={14} />
+                    </Link>
+                  </div>
+                </article>
+              )
+            })}
           </div>
         </div>
       </section>
 
-      {/* ============ FAQ ============ */}
+      <section className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8">
+        <div className="pk-inview flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-(--pk-accent)">
+              Model
+            </p>
+            <h2 className="mt-4 text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
+              Satu API key, tiga keluarga model.
+            </h2>
+          </div>
+          <p className="max-w-sm text-sm leading-6 text-(--pk-text-dim)">
+            GPT untuk chat umum, Claude untuk analisis &amp; reasoning, GLM
+            untuk task ringan. Harga per 1 juta token berbeda per model.
+          </p>
+        </div>
+
+        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {models.map((model, i) => (
+            <article
+              key={model.name}
+              className="pk-panel pk-lift pk-inview p-6"
+              style={{ animationDelay: `${i * 90}ms` }}
+            >
+              <h3 className="text-xl font-semibold">{model.name}</h3>
+              <p className="mt-2 text-sm leading-6 text-(--pk-text-dim)">
+                {model.detail}
+              </p>
+              <Link
+                href="/pricing"
+                className="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-(--pk-accent) hover:underline"
+              >
+                Lihat harga per model
+                <ArrowRight size={12} />
+              </Link>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <section className="mx-auto grid w-full max-w-7xl gap-10 px-5 py-20 sm:px-8 lg:grid-cols-2">
         <div className="pk-inview min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--pk-accent)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-(--pk-accent)">
             FAQ
           </p>
           <h2 className="mt-4 text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
             Pertanyaan yang penting sebelum mulai.
           </h2>
-          <p className="mt-4 max-w-md text-sm leading-6 text-[color:var(--pk-text-dim)]">
+          <p className="mt-4 max-w-md text-sm leading-6 text-(--pk-text-dim)">
             Jawaban ini mengikuti perilaku billing yang digunakan sistem.
           </p>
         </div>
 
-        <div className="pk-panel pk-inview divide-y divide-[color:var(--pk-line)] overflow-hidden">
+        <div className="pk-panel pk-inview divide-y divide-(--pk-line) overflow-hidden">
           {[
             {
-              q: "Apa yang terjadi jika request gagal?",
-              a: "Hold dilepas dan saldo tidak dipotong.",
+              q: "Apakah saldo saya bisa hangus?",
+              a: "Saldo tidak hangus selama akun aktif. Biaya dipotong hanya saat kamu mengirim request ke model.",
             },
             {
               q: "Bagaimana pembayaran diverifikasi?",
-              a: "Webhook hanya menjadi pemicu. Status diverifikasi ulang melalui Transaction Detail API Pakasir.",
+              a: "Pembayaran via QRIS diverifikasi manual oleh admin. Status akan muncul di dashboard setelah dikonfirmasi.",
+            },
+            {
+              q: "Apa yang terjadi jika request gagal?",
+              a: "Saldo yang di-hold akan dilepas kembali. Request gagal tidak memotong saldo kamu.",
             },
             {
               q: "Kapan saya bisa mulai memakai API?",
-              a: "Setelah pembayaran terverifikasi dan saldo masuk, buat API key dari dashboard.",
+              a: "Setelah pembayaran terverifikasi dan saldo masuk, buat API key dari dashboard dan mulai kirim request.",
             },
           ].map((item) => (
             <details key={item.q} className="pk-faq group">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-5 text-sm font-semibold transition-colors hover:text-[color:var(--pk-accent)] sm:text-base">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-5 text-sm font-semibold transition-colors hover:text-(--pk-accent) sm:text-base">
                 <span className="min-w-0">{item.q}</span>
                 <span className="pk-faq-icon shrink-0" aria-hidden>
                   +
                 </span>
               </summary>
-              <p className="pk-faq-answer px-5 pb-5 text-sm leading-6 text-[color:var(--pk-text-dim)]">
+              <p className="pk-faq-answer px-5 pb-5 text-sm leading-6 text-(--pk-text-dim)">
                 {item.a}
               </p>
             </details>
@@ -349,22 +423,20 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ============ FEEDBACK / MASUKAN ============ */}
       <FeedbackSection />
 
-      {/* ============ CTA PENUTUP ============ */}
       <section className="mx-auto w-full max-w-7xl px-5 pb-24 sm:px-8">
         <div className="pk-panel pk-inview relative overflow-hidden px-6 py-14 text-center sm:px-12 sm:py-20">
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_80%_at_50%_120%,rgba(240,169,59,0.22),transparent_70%)]"
           />
-          <h2 className="relative break-words text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
+          <h2 className="relative wrap-break-word text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
             Siap kirim request pertama?
           </h2>
-          <p className="relative mx-auto mt-4 max-w-lg text-sm leading-6 text-[color:var(--pk-text-dim)]">
-            Buat akun, isi kuota dengan QRIS atau VA, lalu langsung pakai
-            endpoint chat completions.
+          <p className="relative mx-auto mt-4 max-w-lg text-sm leading-6 text-(--pk-text-dim)">
+            Buat akun, top up saldo via QRIS, lalu langsung pakai endpoint chat
+            completions.
           </p>
           <div className="relative mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             <Link
@@ -389,10 +461,6 @@ export default function Home() {
     </main>
   )
 }
-
-/* ============================================================
-   FEEDBACK SECTION
-   ============================================================ */
 
 const MAX_FILE_SIZE_MB = 5
 const MAX_FILES = 3
@@ -497,20 +565,19 @@ function FeedbackSection() {
       className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8"
     >
       <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr]">
-        {/* Kolom kiri: info */}
         <div className="pk-inview min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--pk-accent)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-(--pk-accent)">
             Suara Anda
           </p>
           <h2 className="mt-4 text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
             Ada masukan, kesan, atau ide fitur?
           </h2>
-          <p className="mt-4 max-w-md text-sm leading-6 text-[color:var(--pk-text-dim)]">
+          <p className="mt-4 max-w-md text-sm leading-6 text-(--pk-text-dim)">
             Kami baca semua masukan. Ceritakan pengalaman Anda, laporkan bug,
             atau usulkan fitur baru — tim kami akan menindaklanjuti.
           </p>
 
-          <ul className="mt-8 space-y-3 text-sm text-[color:var(--pk-text-dim)]">
+          <ul className="mt-8 space-y-3 text-sm text-(--pk-text-dim)">
             {[
               "Masukan langsung dibaca tim produk",
               "Respon maksimal 1×24 jam kerja",
@@ -520,31 +587,29 @@ function FeedbackSection() {
               <li key={item} className="flex items-start gap-3">
                 <span
                   aria-hidden
-                  className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--pk-accent)]"
+                  className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-(--pk-accent)"
                 />
                 <span className="min-w-0">{item}</span>
               </li>
             ))}
           </ul>
 
-          {/* Rating visual */}
-          <div className="mt-8 inline-flex max-w-full items-center gap-2 rounded-full border border-[color:var(--pk-line-2)] bg-[#0b1626]/60 px-3.5 py-1.5">
+          <div className="mt-8 inline-flex max-w-full items-center gap-2 rounded-full border border-(--pk-line-2) bg-[#0b1626]/60 px-3.5 py-1.5">
             <div className="flex items-center gap-0.5">
               {[1, 2, 3, 4, 5].map((n) => (
                 <Star
                   key={n}
                   size={12}
-                  className="fill-[color:var(--pk-accent)] text-[color:var(--pk-accent)]"
+                  className="fill-(--pk-accent) text-(--pk-accent)"
                 />
               ))}
             </div>
-            <span className="truncate text-[11px] font-medium text-[color:var(--pk-text-dim)]">
+            <span className="truncate text-[11px] font-medium text-(--pk-text-dim)">
               Dipercaya pengguna di seluruh Indonesia
             </span>
           </div>
         </div>
 
-        {/* Kolom kanan: form */}
         <div className="pk-panel pk-inview min-w-0 p-6 sm:p-8">
           {state === "success" ? (
             <div className="flex flex-col items-center py-8 text-center">
@@ -558,7 +623,7 @@ function FeedbackSection() {
               <h3 className="mt-5 text-lg font-semibold">
                 Terima kasih atas masukannya!
               </h3>
-              <p className="mt-2 max-w-sm text-sm leading-6 text-[color:var(--pk-text-dim)]">
+              <p className="mt-2 max-w-sm text-sm leading-6 text-(--pk-text-dim)">
                 Kami sudah menerima pesan Anda. Tim akan meninjau dan
                 menindaklanjuti maksimal 1×24 jam kerja.
               </p>
@@ -573,36 +638,32 @@ function FeedbackSection() {
           ) : (
             <form onSubmit={submit} className="space-y-4">
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[color:var(--pk-accent)]/40 bg-[color:var(--pk-accent)]/10">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-(--pk-accent)/40 bg-(--pk-accent)/10">
                   <MessageSquare
                     size={18}
-                    className="text-[color:var(--pk-accent)]"
+                    className="text-(--pk-accent)"
                   />
                 </span>
                 <div className="min-w-0">
                   <h3 className="text-base font-semibold">Kirim Masukan</h3>
-                  <p className="mt-0.5 text-[11px] text-[color:var(--pk-text-mute)]">
+                  <p className="mt-0.5 text-[11px] text-(--pk-text-mute)">
                     Semua field bertanda{" "}
-                    <span className="text-[color:var(--pk-accent)]">*</span>{" "}
-                    wajib diisi
+                    <span className="text-(--pk-accent)">*</span> wajib diisi
                   </p>
                 </div>
               </div>
 
-              {/* Error banner */}
               {state === "error" && errorMsg && (
                 <div className="flex items-start gap-2.5 rounded-xl border border-[#f87171]/40 bg-[#f87171]/10 px-4 py-3 text-sm text-[#fca5a5]">
                   <AlertCircle size={16} className="mt-0.5 shrink-0" />
-                  <span className="min-w-0 break-words">{errorMsg}</span>
+                  <span className="min-w-0 wrap-break-word">{errorMsg}</span>
                 </div>
               )}
 
-              {/* Nama + Email */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="min-w-0">
                   <label className="text-xs font-medium">
-                    Nama lengkap{" "}
-                    <span className="text-[color:var(--pk-accent)]">*</span>
+                    Nama lengkap <span className="text-(--pk-accent)">*</span>
                   </label>
                   <input
                     type="text"
@@ -616,8 +677,7 @@ function FeedbackSection() {
                 </div>
                 <div className="min-w-0">
                   <label className="text-xs font-medium">
-                    Email{" "}
-                    <span className="text-[color:var(--pk-accent)]">*</span>
+                    Email <span className="text-(--pk-accent)">*</span>
                   </label>
                   <input
                     type="email"
@@ -631,14 +691,11 @@ function FeedbackSection() {
                 </div>
               </div>
 
-              {/* WA + Kategori */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="min-w-0">
                   <label className="text-xs font-medium">
                     Nomor WhatsApp{" "}
-                    <span className="text-[color:var(--pk-text-mute)]">
-                      (opsional)
-                    </span>
+                    <span className="text-(--pk-text-mute)">(opsional)</span>
                   </label>
                   <input
                     type="tel"
@@ -652,14 +709,14 @@ function FeedbackSection() {
                 <div className="min-w-0">
                   <label className="text-xs font-medium">
                     Jenis masukan{" "}
-                    <span className="text-[color:var(--pk-accent)]">*</span>
+                    <span className="text-(--pk-accent)">*</span>
                   </label>
                   <div className="relative mt-1.5">
                     <select
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
                       disabled={state === "loading"}
-                      className="min-h-11 w-full appearance-none rounded-xl border border-[color:var(--pk-line-2)] bg-[#0b1626] py-2.5 pl-3.5 pr-10 text-sm text-[color:var(--pk-text)] outline-none transition-colors focus:border-[color:var(--pk-accent)] focus:ring-2 focus:ring-[color:var(--pk-accent)]/25 disabled:opacity-60"
+                      className="min-h-11 w-full appearance-none rounded-xl border border-(--pk-line-2) bg-[#0b1626] py-2.5 pl-3.5 pr-10 text-sm text-(--pk-text) outline-none transition-colors focus:border-(--pk-accent) focus:ring-2 focus:ring-(--pk-accent)/25 disabled:opacity-60"
                     >
                       {feedbackCategories.map((c) => (
                         <option key={c} value={c} className="bg-[#0b1626]">
@@ -669,7 +726,7 @@ function FeedbackSection() {
                     </select>
                     <span
                       aria-hidden
-                      className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[color:var(--pk-text-mute)]"
+                      className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-(--pk-text-mute)"
                     >
                       <svg
                         width="14"
@@ -688,11 +745,9 @@ function FeedbackSection() {
                 </div>
               </div>
 
-              {/* Pesan */}
               <div className="min-w-0">
                 <label className="text-xs font-medium">
-                  Pesan{" "}
-                  <span className="text-[color:var(--pk-accent)]">*</span>
+                  Pesan <span className="text-(--pk-accent)">*</span>
                 </label>
                 <textarea
                   required
@@ -702,19 +757,18 @@ function FeedbackSection() {
                   onChange={(e) => setMessage(e.target.value)}
                   disabled={state === "loading"}
                   placeholder="Ceritakan pengalaman, kesan, ide fitur, atau masalah yang Anda temui…"
-                  className="mt-1.5 w-full resize-none rounded-xl border border-[color:var(--pk-line-2)] bg-[#0b1626] px-3.5 py-3 text-sm text-[color:var(--pk-text)] outline-none transition-colors placeholder:text-[color:var(--pk-text-mute)] focus:border-[color:var(--pk-accent)] focus:ring-2 focus:ring-[color:var(--pk-accent)]/25 disabled:opacity-60"
+                  className="mt-1.5 w-full resize-none rounded-xl border border-(--pk-line-2) bg-[#0b1626] px-3.5 py-3 text-sm text-(--pk-text) outline-none transition-colors placeholder:text-(--pk-text-mute) focus:border-(--pk-accent) focus:ring-2 focus:ring-(--pk-accent)/25 disabled:opacity-60"
                 />
-                <div className="mt-1 flex items-center justify-between text-[10px] text-[color:var(--pk-text-mute)]">
+                <div className="mt-1 flex items-center justify-between text-[10px] text-(--pk-text-mute)">
                   <span>Minimal 1 karakter</span>
                   <span className="font-mono">{message.length}/2000</span>
                 </div>
               </div>
 
-              {/* Attach File */}
               <div className="min-w-0">
                 <label className="text-xs font-medium">
                   Lampiran{" "}
-                  <span className="text-[color:var(--pk-text-mute)]">
+                  <span className="text-(--pk-text-mute)">
                     (opsional, maks. {MAX_FILES} file, {MAX_FILE_SIZE_MB}{" "}
                     MB/file)
                   </span>
@@ -736,7 +790,7 @@ function FeedbackSection() {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={state === "loading" || files.length >= MAX_FILES}
-                  className="mt-1.5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[color:var(--pk-line-2)] bg-[#0b1626]/60 px-4 text-sm text-[color:var(--pk-text-dim)] transition-colors hover:border-[color:var(--pk-accent)]/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  className="mt-1.5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-(--pk-line-2) bg-[#0b1626]/60 px-4 text-sm text-(--pk-text-dim) transition-colors hover:border-(--pk-accent)/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Paperclip size={14} className="shrink-0" />
                   <span className="truncate">
@@ -746,22 +800,21 @@ function FeedbackSection() {
                   </span>
                 </button>
 
-                {/* File list */}
                 {files.length > 0 && (
                   <ul className="mt-3 space-y-1.5">
                     {files.map((f, i) => (
                       <li
                         key={`${f.name}-${f.size}-${f.lastModified}`}
-                        className="flex items-center gap-2 rounded-lg border border-[color:var(--pk-line-2)] bg-[#0b1626] px-3 py-2 text-xs"
+                        className="flex items-center gap-2 rounded-lg border border-(--pk-line-2) bg-[#0b1626] px-3 py-2 text-xs"
                       >
                         <Paperclip
                           size={12}
-                          className="shrink-0 text-[color:var(--pk-text-mute)]"
+                          className="shrink-0 text-(--pk-text-mute)"
                         />
-                        <span className="min-w-0 flex-1 truncate font-mono text-[color:var(--pk-text-dim)]">
+                        <span className="min-w-0 flex-1 truncate font-mono text-(--pk-text-dim)">
                           {f.name}
                         </span>
-                        <span className="shrink-0 font-mono text-[10px] text-[color:var(--pk-text-mute)]">
+                        <span className="shrink-0 font-mono text-[10px] text-(--pk-text-mute)">
                           {(f.size / 1024).toFixed(0)} KB
                         </span>
                         <button
@@ -769,7 +822,7 @@ function FeedbackSection() {
                           onClick={() => removeFile(i)}
                           disabled={state === "loading"}
                           aria-label={`Hapus ${f.name}`}
-                          className="shrink-0 rounded-md p-1 text-[color:var(--pk-text-mute)] transition-colors hover:bg-[#f87171]/10 hover:text-[#fca5a5]"
+                          className="shrink-0 rounded-md p-1 text-(--pk-text-mute) transition-colors hover:bg-[#f87171]/10 hover:text-[#fca5a5]"
                         >
                           <Trash2 size={11} />
                         </button>
@@ -779,7 +832,6 @@ function FeedbackSection() {
                 )}
               </div>
 
-              {/* Submit */}
               <button
                 type="submit"
                 disabled={!canSubmit}
@@ -798,7 +850,7 @@ function FeedbackSection() {
                 )}
               </button>
 
-              <p className="text-center text-[10px] leading-5 text-[color:var(--pk-text-mute)]">
+              <p className="text-center text-[10px] leading-5 text-(--pk-text-mute)">
                 Dengan mengirim, Anda setuju masukan dapat digunakan untuk
                 peningkatan layanan.
               </p>

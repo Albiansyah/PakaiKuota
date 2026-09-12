@@ -4,28 +4,19 @@ import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useLanguage } from "@/components/providers/language-provider"
 import {
+  TOPUP_PACKAGES,
+  formatRupiah,
+  formatUsd,
+} from "@/lib/pricing-config"
+import {
   ArrowLeft,
   ArrowRight,
   Check,
   Copy,
-  Gift,
-  LayoutDashboard,
   Loader2,
-  Package as PackageIcon,
-  Settings2,
   Sparkles,
   Wallet,
 } from "lucide-react"
-
-type Package = {
-  id: string
-  name: string
-  description: string | null
-  token_amount: number
-  price_rupiah: number
-  bonus_percent: number
-  duration_days: number | null
-}
 
 type Model = {
   id: string
@@ -35,33 +26,12 @@ type Model = {
   tier: string
   input_price_per_1k: number
   output_price_per_1k: number
-}
-
-function getDailyRate(days: number): number {
-  if (days <= 30) return 300
-  if (days <= 60) return 250
-  if (days <= 90) return 200
-  return 150
-}
-
-/** Format angka token jadi "1.2 jt token" / "500 rb token" / "150 token" */
-function formatTokens(value: number): string {
-  if (!Number.isFinite(value) || value <= 0) return "0 token"
-  if (value >= 1_000_000_000) {
-    return `${(value / 1_000_000_000).toFixed(1).replace(/\.0$/, "")} M token`
-  }
-  if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(1).replace(/\.0$/, "")} jt token`
-  }
-  if (value >= 1_000) {
-    return `${(value / 1_000).toFixed(1).replace(/\.0$/, "")} rb token`
-  }
-  return `${value.toLocaleString("id-ID")} token`
+  input_price_per_1m_usd: number
+  output_price_per_1m_usd: number
 }
 
 export default function PricingPage() {
   const { t } = useLanguage()
-  const [packages, setPackages] = useState<Package[]>([])
   const [models, setModels] = useState<Model[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -78,12 +48,10 @@ export default function PricingPage() {
       })
       .then((data) => {
         if (!active) return
-        setPackages(data.packages ?? [])
         setModels(data.models ?? [])
       })
       .catch(() => {
         if (!active) return
-        setPackages([])
         setModels([])
         setError(true)
       })
@@ -109,19 +77,17 @@ export default function PricingPage() {
       setCopied(slug)
       setTimeout(() => setCopied(null), 1500)
     } catch {
-      // ignore
+      /* ignore */
     }
   }
 
   return (
     <div className="relative min-h-screen text-(--pk-text)">
-      {/* Background */}
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,#0f1e38_0%,#050b16_55%,#03070e_100%)]" />
         <div className="pk-grid absolute inset-0" />
       </div>
 
-      {/* Header */}
       <header className="border-b border-(--pk-line) bg-[#070f1e]/60 px-5 py-12 backdrop-blur-sm sm:px-8 sm:py-16">
         <div className="mx-auto max-w-6xl">
           <Link
@@ -134,20 +100,20 @@ export default function PricingPage() {
 
           <div className="mt-6 text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-(--pk-accent)">
-              Harga &amp; paket
+              Saldo & harga
             </p>
             <h1 className="mt-4 text-4xl font-semibold tracking-[-0.045em] sm:text-5xl">
-              {t("pricing.title")}
+              Bayar sesuai pemakaian.
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-(--pk-text-dim)">
-              {t("pricing.subtitle")}
+              Beli saldo dalam Rupiah, pakai untuk GPT, Claude, dan GLM. Biaya
+              dipotong otomatis dari saldo sesuai pemakaian token aktual.
             </p>
           </div>
         </div>
       </header>
 
       <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-16">
-        {/* Pay-as-you-go */}
         <section className="pk-panel pk-inview mb-14 p-6 sm:p-8">
           <div className="flex flex-col items-start gap-6 md:flex-row md:items-center md:justify-between">
             <div className="flex items-start gap-4">
@@ -173,136 +139,116 @@ export default function PricingPage() {
           </div>
         </section>
 
-        {/* Commitment Packages */}
         <section className="mb-16">
           <div className="mb-6">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-(--pk-accent)">
-              Paket komitmen
+              Top up saldo
             </p>
             <h2 className="mt-3 text-2xl font-semibold tracking-[-0.035em] sm:text-3xl">
-              {t("pricing.packages")}
+              Pilih nominal saldo kamu.
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-(--pk-text-dim)">
-              {t("pricing.packages.desc")}
+              Semua saldo dalam Rupiah. Bisa dipakai untuk semua model yang
+              tersedia. Biaya per request dipotong sesuai pemakaian aktual.
             </p>
           </div>
 
-          {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2
-                size={24}
-                className="animate-spin text-(--pk-text-mute)"
-              />
-            </div>
-          ) : packages.length === 0 ? (
-            <div className="pk-panel p-12 text-center">
-              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-(--pk-line-2) bg-[#0b1626]">
-                <PackageIcon size={22} className="text-(--pk-text-mute)" />
-              </span>
-              <p className="mt-5 font-semibold">
-                Belum ada paket tersedia
-              </p>
-              <p className="mt-2 text-sm text-(--pk-text-dim)">
-                Paket akan muncul di sini setelah admin menambahkannya.
-              </p>
-            </div>
-          ) : (
-            <div className="grid items-stretch gap-5 pt-4 sm:grid-cols-2 lg:grid-cols-4">
-              {packages.map((pkg, index) => {
-                const featured = index === 1
-                const totalTokens =
-                  pkg.token_amount +
-                  Math.floor((pkg.token_amount * pkg.bonus_percent) / 100)
-                return (
-                  <article
-                    key={pkg.id}
-                    className={`pk-panel relative flex h-full flex-col p-6 ${
-                      featured ? "pk-featured" : ""
-                    }`}
-                  >
-                    {featured && (
-                      <span className="absolute right-5 top-5 inline-flex items-center gap-1 rounded-full border border-(--pk-accent)/40 bg-(--pk-accent)/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-(--pk-accent)">
-                        <Sparkles size={10} />
-                        Populer
-                      </span>
-                    )}
+          <div className="grid items-stretch gap-5 pt-4 sm:grid-cols-2 lg:grid-cols-4">
+            {TOPUP_PACKAGES.map((pkg) => {
+              const totalSaldo = pkg.amount + pkg.bonus
 
-                    <h3 className="text-xl font-semibold">{pkg.name}</h3>
-                    <p className="mt-2 min-h-10 text-sm leading-6 text-(--pk-text-dim)">
-                      {pkg.description ?? "Paket penggunaan API"}
+              return (
+                <article
+                  key={pkg.id}
+                  className={`pk-panel relative flex h-full flex-col p-6 ${
+                    pkg.featured ? "pk-featured" : ""
+                  }`}
+                >
+                  {pkg.featured && (
+                    <span className="absolute right-5 top-5 inline-flex items-center gap-1 rounded-full border border-(--pk-accent)/40 bg-(--pk-accent)/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-(--pk-accent)">
+                      <Sparkles size={10} />
+                      Populer
+                    </span>
+                  )}
+
+                  <h3 className="text-sm font-semibold uppercase tracking-widest text-(--pk-text-dim)">
+                    {pkg.name}
+                  </h3>
+
+                  <div className="mt-4">
+                    <p className="font-mono text-3xl font-semibold tracking-[-0.02em] text-(--pk-text)">
+                      {formatRupiah(pkg.amount)}
                     </p>
-
-                    <div className="mt-6">
-                      <p className="font-mono text-3xl font-semibold tracking-[-0.02em] text-(--pk-text)">
-                        Rp {pkg.price_rupiah.toLocaleString("id-ID")}
+                    {pkg.bonus > 0 && (
+                      <p className="mt-1 text-xs text-[#6ee7b7]">
+                        + Bonus {formatRupiah(pkg.bonus)}
                       </p>
-                      <p className="mt-1 text-sm text-(--pk-text-mute)">
-                        {pkg.duration_days ?? 0} hari aktif
-                      </p>
-                    </div>
+                    )}
+                  </div>
 
-                    {/* Kuota token highlight */}
-                    <div className="mt-5 rounded-xl border border-(--pk-accent)/30 bg-(--pk-accent)/5 p-3.5">
-                      <p className="text-[10px] font-semibold uppercase tracking-widest text-(--pk-text-mute)">
-                        Kuota token
-                      </p>
-                      <p className="mt-1 font-mono text-2xl font-semibold text-(--pk-accent)">
-                        {formatTokens(totalTokens)}
-                      </p>
-                      {pkg.bonus_percent > 0 && (
-                        <p className="mt-1 text-[11px] text-[#6ee7b7]">
-                          {formatTokens(pkg.token_amount)} +{" "}
-                          {pkg.bonus_percent}% bonus
-                        </p>
-                      )}
-                    </div>
+                  <p className="mt-4 min-h-10 text-sm leading-6 text-(--pk-text-dim)">
+                    {pkg.detail}
+                  </p>
 
-                    <ul className="mt-5 space-y-2.5 text-sm">
-                      <FeatureRow>
-                        Kuota Rp {pkg.price_rupiah.toLocaleString("id-ID")}
-                      </FeatureRow>
-                      <FeatureRow>
-                        {pkg.duration_days ?? 0} hari aktif
-                      </FeatureRow>
-                      <FeatureRow>
-                        Rp{" "}
-                        {getDailyRate(pkg.duration_days ?? 0).toLocaleString(
-                          "id-ID"
-                        )}
-                        /hari
-                      </FeatureRow>
-                    </ul>
+                  <ul className="mt-5 space-y-2.5 text-sm">
+                    <li className="flex items-start gap-2.5">
+                      <Check
+                        size={14}
+                        className="mt-0.5 shrink-0 text-[#6ee7b7]"
+                      />
+                      <span className="text-(--pk-text-dim)">
+                        Saldo {formatRupiah(totalSaldo)}
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <Check
+                        size={14}
+                        className="mt-0.5 shrink-0 text-[#6ee7b7]"
+                      />
+                      <span className="text-(--pk-text-dim)">
+                        Akses GPT, Claude, GLM
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <Check
+                        size={14}
+                        className="mt-0.5 shrink-0 text-[#6ee7b7]"
+                      />
+                      <span className="text-(--pk-text-dim)">
+                        Bayar per pemakaian
+                      </span>
+                    </li>
+                  </ul>
 
-                    <div className="mt-auto pt-6">
-                      <Link
-                        href="/register"
-                        className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold ${
-                          featured ? "pk-btn-primary" : "pk-btn-ghost"
-                        }`}
-                      >
-                        Beli Sekarang
-                        <ArrowRight size={14} />
-                      </Link>
-                    </div>
-                  </article>
-                )
-              })}
-            </div>
-          )}
+                  <div className="mt-auto pt-6">
+                    <Link
+                      href={`/dashboard/topup?package=${pkg.id}`}
+                      className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold ${
+                        pkg.featured ? "pk-btn-primary" : "pk-btn-ghost"
+                      }`}
+                    >
+                      Top Up Sekarang
+                      <ArrowRight size={14} />
+                    </Link>
+                  </div>
+                </article>
+              )
+            })}
+          </div>
         </section>
 
-        {/* Available Models */}
         <section className="mb-16">
           <div className="mb-6">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-(--pk-accent)">
-              Katalog
+              Katalog model
             </p>
             <h2 className="mt-3 text-2xl font-semibold tracking-[-0.035em] sm:text-3xl">
-              Model tersedia
+              Harga per 1 juta token.
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-(--pk-text-dim)">
-              Model aktif dikelompokkan oleh admin. Salin slug untuk dipakai
-              di API.
+              Harga model dipatok dalam USD sesuai provider. Biaya dikonversi
+              ke Rupiah dan dipotong dari saldo saat request diproses. Salin
+              slug untuk dipakai di API.
             </p>
           </div>
 
@@ -313,11 +259,15 @@ export default function PricingPage() {
                 className="animate-spin text-(--pk-text-mute)"
               />
             </div>
-          ) : Object.keys(groupedModels).length === 0 ? (
+          ) : error || Object.keys(groupedModels).length === 0 ? (
             <div className="pk-panel p-12 text-center">
-              <p className="font-semibold">Belum ada model aktif</p>
+              <p className="font-semibold">
+                {error ? "Gagal memuat model" : "Belum ada model aktif"}
+              </p>
               <p className="mt-2 text-sm text-(--pk-text-dim)">
-                Model akan tampil di sini setelah admin mengaktifkannya.
+                {error
+                  ? "Coba muat ulang halaman beberapa saat lagi."
+                  : "Model akan tampil di sini setelah admin mengaktifkannya."}
               </p>
             </div>
           ) : (
@@ -349,6 +299,21 @@ export default function PricingPage() {
                           <code className="mt-0.5 block truncate font-mono text-[11px] text-(--pk-text-mute)">
                             {item.slug}
                           </code>
+                          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-(--pk-text-mute)">
+                            <span>
+                              in:{" "}
+                              <span className="text-(--pk-text-dim)">
+                                {formatUsd(item.input_price_per_1m_usd)}/1M
+                              </span>
+                            </span>
+                            <span className="text-(--pk-line-2)">·</span>
+                            <span>
+                              out:{" "}
+                              <span className="text-(--pk-text-dim)">
+                                {formatUsd(item.output_price_per_1m_usd)}/1M
+                              </span>
+                            </span>
+                          </div>
                         </div>
 
                         <div className="flex items-center gap-3">
@@ -392,9 +357,6 @@ export default function PricingPage() {
           )}
         </section>
 
-        {/* ============================================================
-            Custom Purchase — Caption Card menuju Dashboard
-           ============================================================ */}
         <section className="pk-panel pk-inview relative overflow-hidden p-6 sm:p-8">
           <div
             aria-hidden
@@ -404,22 +366,20 @@ export default function PricingPage() {
           <div className="relative flex flex-col items-start gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-start gap-4">
               <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-(--pk-accent)/40 bg-(--pk-accent)/10">
-                <Settings2 size={22} className="text-(--pk-accent)" />
+                <Wallet size={22} className="text-(--pk-accent)" />
               </span>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-(--pk-accent)">
-                  Custom pembelian
+                  Custom saldo
                 </p>
                 <h2 className="mt-2 text-xl font-semibold tracking-[-0.02em] sm:text-2xl">
-                  Butuh paket dengan kuota & durasi sendiri?
+                  Butuh nominal saldo di luar pilihan di atas?
                 </h2>
                 <p className="mt-2 max-w-xl text-sm leading-6 text-(--pk-text-dim)">
-                  Atur kuota token (mulai 10 juta, kelipatan 20 juta) dan durasi
-                  aktif sesuai kebutuhan Anda — langsung dari dashboard. Harga
-                  otomatis menyesuaikan volume dan tier yang Anda pilih.
+                  Atur nominal top up sendiri langsung dari dashboard. Saldo
+                  dalam Rupiah, bisa dipakai untuk semua model yang tersedia.
                 </p>
 
-                {/* Quick bullet */}
                 <ul className="mt-4 grid gap-2 text-sm text-(--pk-text-dim) sm:grid-cols-2">
                   <li className="flex items-start gap-2">
                     <Check
@@ -427,7 +387,8 @@ export default function PricingPage() {
                       className="mt-0.5 shrink-0 text-[#6ee7b7]"
                     />
                     <span>
-                      Kuota mulai <strong className="text-(--pk-text)">10 juta token</strong>
+                      Nominal{" "}
+                      <strong className="text-(--pk-text)">fleksibel</strong>
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
@@ -436,7 +397,8 @@ export default function PricingPage() {
                       className="mt-0.5 shrink-0 text-[#6ee7b7]"
                     />
                     <span>
-                      Durasi <strong className="text-(--pk-text)">1–365 hari</strong> fleksibel
+                      Bayar via{" "}
+                      <strong className="text-(--pk-text)">QRIS</strong>
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
@@ -445,7 +407,10 @@ export default function PricingPage() {
                       className="mt-0.5 shrink-0 text-[#6ee7b7]"
                     />
                     <span>
-                      Diskon otomatis untuk volume besar
+                      Akses{" "}
+                      <strong className="text-(--pk-text)">
+                        GPT, Claude, GLM
+                      </strong>
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
@@ -454,7 +419,10 @@ export default function PricingPage() {
                       className="mt-0.5 shrink-0 text-[#6ee7b7]"
                     />
                     <span>
-                      Bayar dengan QRIS atau VA
+                      Biaya{" "}
+                      <strong className="text-(--pk-text)">
+                        per pemakaian
+                      </strong>
                     </span>
                   </li>
                 </ul>
@@ -466,20 +434,19 @@ export default function PricingPage() {
                 href="/dashboard/topup"
                 className="pk-btn-primary inline-flex min-h-11 items-center justify-center gap-2 px-5 text-sm"
               >
-                <LayoutDashboard size={14} />
-                Custom di Dashboard
+                <Wallet size={14} />
+                Top Up di Dashboard
               </Link>
               <Link
-                href="/dashboard"
+                href="/docs"
                 className="pk-btn-ghost inline-flex min-h-11 items-center justify-center gap-2 px-5 text-sm font-medium"
               >
-                Lihat Dashboard
+                Baca dokumentasi
               </Link>
             </div>
           </div>
         </section>
 
-        {/* Back to home (bottom) */}
         <div className="mt-12 flex justify-center">
           <Link
             href="/"
@@ -491,17 +458,5 @@ export default function PricingPage() {
         </div>
       </div>
     </div>
-  )
-}
-
-function FeatureRow({ children }: { children: React.ReactNode }) {
-  return (
-    <li className="flex items-start gap-2.5">
-      <Check
-        size={14}
-        className="mt-0.5 shrink-0 text-[#6ee7b7]"
-      />
-      <span className="text-(--pk-text-dim)">{children}</span>
-    </li>
   )
 }

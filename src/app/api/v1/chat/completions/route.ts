@@ -92,10 +92,6 @@ function extractUsage(payload: unknown): {
 }
 
 export async function POST(request: Request) {
-  // ------------------------------------------------------------
-  // 1. Request size protection
-  // ------------------------------------------------------------
-
   const contentLength = Number(
     request.headers.get('content-length') ?? 0,
   );
@@ -108,10 +104,6 @@ export async function POST(request: Request) {
     );
   }
 
-  // ------------------------------------------------------------
-  // 2. Authenticate API key
-  // ------------------------------------------------------------
-
   const rawKey = request.headers.get('authorization');
 
   const identity = await authenticateApiKey(rawKey ?? '');
@@ -123,10 +115,6 @@ export async function POST(request: Request) {
       401,
     );
   }
-
-  // ------------------------------------------------------------
-  // 3. Rate limit
-  // ------------------------------------------------------------
 
   const ip =
     request.headers
@@ -174,10 +162,6 @@ export async function POST(request: Request) {
     );
   }
 
-  // ------------------------------------------------------------
-  // 4. Parse request body
-  // ------------------------------------------------------------
-
   let body: {
     model?: string;
     messages?: unknown[];
@@ -196,10 +180,6 @@ export async function POST(request: Request) {
       400,
     );
   }
-
-  // ------------------------------------------------------------
-  // 5. Validate required fields
-  // ------------------------------------------------------------
 
   if (
     !body.model ||
@@ -227,10 +207,6 @@ export async function POST(request: Request) {
     );
   }
 
-  // ------------------------------------------------------------
-  // 6. Resolve model
-  // ------------------------------------------------------------
-
   const model = await getGatewayModel(body.model);
 
   if (!model) {
@@ -249,10 +225,6 @@ export async function POST(request: Request) {
     );
   }
 
-  // ------------------------------------------------------------
-  // 7. Get current USD -> IDR rate
-  // ------------------------------------------------------------
-
   const forexRate = await getLatestForexRate();
 
   if (!forexRate) {
@@ -262,10 +234,6 @@ export async function POST(request: Request) {
       503,
     );
   }
-
-  // ------------------------------------------------------------
-  // 8. Estimate input tokens + authorization hold
-  // ------------------------------------------------------------
 
   const estimatedInput = tokenCount(
     body.messages,
@@ -313,10 +281,6 @@ export async function POST(request: Request) {
     );
   }
 
-  // ------------------------------------------------------------
-  // 9. Load NewAPI configuration
-  // ------------------------------------------------------------
-
   const config = await createSupabaseAdminClient()
     .from('newapi_config')
     .select(
@@ -348,10 +312,6 @@ export async function POST(request: Request) {
       : config.data?.api_key ??
         process.env.UPSTREAM_API_KEY;
 
-  // ------------------------------------------------------------
-  // 10. Verify NewAPI configuration
-  // ------------------------------------------------------------
-
   if (!upstreamUrl || !upstreamKey) {
     await finalizeRequest({
       requestId: authorization.data,
@@ -365,45 +325,10 @@ export async function POST(request: Request) {
     );
   }
 
-  // ------------------------------------------------------------
-  // 11. Build upstream request
-  // ------------------------------------------------------------
-
   const upstreamBody = {
     ...body,
     model: model.name ?? body.model,
   };
-
-  // DEBUG ONLY
-  // Remove/redact these logs after billing verification.
-  console.log(
-    '[DEBUG] upstream model:',
-    upstreamBody.model,
-  );
-
-  console.log(
-    '[DEBUG] upstream URL:',
-    upstreamUrl,
-  );
-
-  console.log(
-    '[DEBUG] request billing estimate:',
-    {
-      model: body.model,
-      estimatedInput,
-      maxTokens,
-      estimatedCostUsd,
-      forexRate,
-    },
-  );
-
-  // Jangan log seluruh upstreamBody karena bisa berisi
-  // prompt/user content.
-  // console.log('[DEBUG] upstream body:', JSON.stringify(upstreamBody));
-
-  // ------------------------------------------------------------
-  // 12. Call NewAPI
-  // ------------------------------------------------------------
 
   const controller = new AbortController();
 
@@ -447,10 +372,6 @@ export async function POST(request: Request) {
 
   clearTimeout(timeout);
 
-  // ------------------------------------------------------------
-  // 13. Upstream response body check
-  // ------------------------------------------------------------
-
   if (!upstream.body) {
     await finalizeRequest({
       requestId: authorization.data,
@@ -463,18 +384,6 @@ export async function POST(request: Request) {
       502,
     );
   }
-
-  // ------------------------------------------------------------
-  // 14. Streaming response
-  // ------------------------------------------------------------
-  //
-  // IMPORTANT:
-  // Streaming belum aman untuk production billing karena
-  // usage SSE belum kita parse.
-  //
-  // Untuk sementara kita reject stream=true supaya billing
-  // tidak memakai estimasi max_tokens sebagai actual usage.
-  //
 
   if (body.stream) {
     await finalizeRequest({
@@ -489,28 +398,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // ------------------------------------------------------------
-  // 15. Read normal JSON response
-  // ------------------------------------------------------------
-
   const rawText = await upstream.text();
-
-  console.log(
-    '[DEBUG] upstream status:',
-    upstream.status,
-  );
-
-  // DEBUG ONLY.
-  // Jangan log seluruh response production karena response
-  // dapat mengandung data user.
-  console.log(
-    '[DEBUG] upstream response length:',
-    rawText.length,
-  );
-
-  // ------------------------------------------------------------
-  // 16. Handle upstream error
-  // ------------------------------------------------------------
 
   if (!upstream.ok) {
     await finalizeRequest({
@@ -524,10 +412,6 @@ export async function POST(request: Request) {
       502,
     );
   }
-
-  // ------------------------------------------------------------
-  // 17. Parse JSON
-  // ------------------------------------------------------------
 
   let payload: unknown;
 
@@ -562,41 +446,11 @@ export async function POST(request: Request) {
     );
   }
 
-  // ------------------------------------------------------------
-  // 18. Extract ACTUAL usage from upstream
-  // ------------------------------------------------------------
-
   const usage = extractUsage(payload);
-
-  console.log(
-    '[BILLING DEBUG] extracted usage:',
-    {
-      input: usage.input,
-      output: usage.output,
-      estimatedInput,
-      maxTokens,
-    },
-  );
 
   const hasActualUsage =
     usage.input > 0 ||
     usage.output > 0;
-
-  // ------------------------------------------------------------
-  // 19. Determine actual token usage
-  // ------------------------------------------------------------
-  //
-  // Normal OpenAI/NewAPI/OpenRouter response:
-  //
-  // usage.prompt_tokens
-  // usage.completion_tokens
-  //
-  // Kalau upstream tidak memberikan usage sama sekali,
-  // fallback ke estimate supaya request tetap bisa ditagih.
-  //
-  // NOTE:
-  // fallback ini masih merupakan estimasi.
-  //
 
   const actualInputTokens =
     hasActualUsage
@@ -608,34 +462,11 @@ export async function POST(request: Request) {
       ? usage.output
       : maxTokens;
 
-  // ------------------------------------------------------------
-  // 20. Calculate final retail cost
-  // ------------------------------------------------------------
-
   const actualCostUsd = estimateCostUsd(
     actualInputTokens,
     actualOutputTokens,
     model,
   );
-
-  console.log(
-    '[BILLING DEBUG] finalizing:',
-    {
-      requestId: authorization.data,
-      inputTokens: actualInputTokens,
-      outputTokens: actualOutputTokens,
-      totalTokens:
-        actualInputTokens +
-        actualOutputTokens,
-      actualCostUsd,
-      forexRate,
-      hasActualUsage,
-    },
-  );
-
-  // ------------------------------------------------------------
-  // 21. Finalize billing
-  // ------------------------------------------------------------
 
   const finalized = await finalizeRequest({
     requestId: authorization.data,
@@ -648,7 +479,7 @@ export async function POST(request: Request) {
 
   if (finalized.error) {
     console.error(
-      '[BILLING ERROR] finalize_request failed:',
+      'finalize_request failed',
       finalized.error,
     );
 
@@ -658,10 +489,6 @@ export async function POST(request: Request) {
       500,
     );
   }
-
-  // ------------------------------------------------------------
-  // 22. Return OpenAI-compatible response
-  // ------------------------------------------------------------
 
   return NextResponse.json(
     payload,

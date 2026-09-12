@@ -3,6 +3,13 @@
 import Link from "next/link"
 import { FormEvent, useEffect, useMemo, useState } from "react"
 import {
+  TOPUP_PACKAGES,
+  TOPUP_MIN,
+  TOPUP_MAX,
+  TOPUP_STEP,
+  formatRupiah as rupiah,
+} from "@/lib/pricing-config"
+import {
   Check,
   Clock,
   Download,
@@ -13,10 +20,6 @@ import {
   X,
   ZoomIn,
 } from "lucide-react"
-
-/* ============================================================
-   TYPES
-   ============================================================ */
 
 type Transaction = {
   id: string
@@ -43,10 +46,6 @@ type Payment = {
 
 type Provider = "gopay_qris" | "pakasir"
 
-/* ============================================================
-   CONSTANTS
-   ============================================================ */
-
 const WHATSAPP_CS_NUMBER = "6285184657474"
 
 const statusLabel: Record<string, string> = {
@@ -61,24 +60,6 @@ const statusLabel: Record<string, string> = {
   refund_requested: "Refund diminta",
 }
 
-const presets = [10000, 25000, 50000, 100000, 250000, 500000]
-
-/* ============================================================
-   HELPERS
-   ============================================================ */
-
-function rupiah(value: number) {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-  }).format(value)
-}
-
-/**
- * Template WhatsApp untuk konfirmasi pembayaran ke admin.
- * Isinya: user bilang sudah bayar + order ID + nominal + bukti transfer.
- */
 function buildPaidConfirmationWhatsAppUrl(
   orderId: string,
   amount: number,
@@ -102,12 +83,11 @@ function buildPaidConfirmationWhatsAppUrl(
   )}`
 }
 
-/* ============================================================
-   PAGE
-   ============================================================ */
-
 export default function TopupPage() {
-  const [amount, setAmount] = useState(10000)
+  const [amount, setAmount] = useState(TOPUP_PACKAGES[0].amount)
+  const [selectedPackage, setSelectedPackage] = useState<string | null>(
+    TOPUP_PACKAGES[0].id
+  )
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [state, setState] = useState<"loading" | "ready" | "error">("loading")
   const [submitting, setSubmitting] = useState(false)
@@ -127,6 +107,18 @@ export default function TopupPage() {
     ).length
     return { credited, pending, total: transactions.length }
   }, [transactions])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const params = new URLSearchParams(window.location.search)
+    const pkgId = params.get("package")
+    if (!pkgId) return
+    const found = TOPUP_PACKAGES.find((p) => p.id === pkgId)
+    if (found) {
+      setAmount(found.amount)
+      setSelectedPackage(found.id)
+    }
+  }, [])
 
   async function loadTransactions() {
     const response = await fetch("/api/transactions", { cache: "no-store" })
@@ -149,7 +141,6 @@ export default function TopupPage() {
     }
   }, [])
 
-  // Lock scroll saat modal zoom buka
   useEffect(() => {
     if (!qrisZoomOpen) return
     const original = document.body.style.overflow
@@ -163,6 +154,17 @@ export default function TopupPage() {
       document.removeEventListener("keydown", onEsc)
     }
   }, [qrisZoomOpen])
+
+  function pickPackage(id: string, value: number) {
+    setSelectedPackage(id)
+    setAmount(value)
+  }
+
+  function onCustomAmount(value: number) {
+    setAmount(value)
+    const match = TOPUP_PACKAGES.find((p) => p.amount === value)
+    setSelectedPackage(match?.id ?? null)
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -251,16 +253,13 @@ export default function TopupPage() {
 
   return (
     <div className="relative min-h-screen text-(--pk-text)">
-      {/* ============================================================
-          HEADER
-          ============================================================ */}
       <header className="border-b border-(--pk-line) bg-[#070f1e]/60 px-5 py-8 backdrop-blur-sm sm:px-8">
         <div className="mx-auto max-w-6xl">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-(--pk-accent)">
             Saldo
           </p>
           <h1 className="mt-3 text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
-            Beli kuota
+            Top Up Saldo
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-6 text-(--pk-text-dim)">
             Pilih nominal, scan QRIS, lalu klik &quot;Saya Sudah Bayar&quot;.
@@ -270,9 +269,6 @@ export default function TopupPage() {
       </header>
 
       <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
-        {/* ============================================================
-            GOPAY QRIS PAYMENT PANEL
-            ============================================================ */}
         {payment && provider === "gopay_qris" && (
           <section className="pk-panel pk-featured pk-inview mb-6 overflow-hidden p-5 sm:p-6">
             <div className="flex items-start gap-3">
@@ -294,7 +290,6 @@ export default function TopupPage() {
             </div>
 
             <div className="mt-6 grid gap-6 border-t border-(--pk-line) pt-5 lg:grid-cols-[280px_1fr]">
-              {/* ---- QRIS Image ---- */}
               <div className="mx-auto w-full max-w-[280px]">
                 <button
                   type="button"
@@ -325,7 +320,6 @@ export default function TopupPage() {
                 </p>
               </div>
 
-              {/* ---- Detail ---- */}
               <div className="space-y-4">
                 <div>
                   <p className="text-[11px] font-medium uppercase tracking-widest text-(--pk-text-mute)">
@@ -399,9 +393,6 @@ export default function TopupPage() {
           </section>
         )}
 
-        {/* ============================================================
-            KONFIRMASI KE ADMIN VIA WHATSAPP
-            ============================================================ */}
         {payment && provider === "gopay_qris" && (
           <section className="pk-panel pk-inview mb-6 p-4 sm:p-5">
             <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
@@ -450,9 +441,6 @@ export default function TopupPage() {
           </section>
         )}
 
-        {/* ============================================================
-            LEGACY PAKASIR PANEL
-            ============================================================ */}
         {payment && provider === "pakasir" && payment.payment_url && (
           <section className="pk-panel pk-featured mb-8 p-5 sm:p-6">
             <h2 className="text-base font-semibold">Pembayaran Pakasir</h2>
@@ -470,11 +458,7 @@ export default function TopupPage() {
           </section>
         )}
 
-        {/* ============================================================
-            FORM + ACTIVE PAYMENT
-            ============================================================ */}
         <div className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
-          {/* ---- Form Buat Pembayaran ---- */}
           <section className="pk-panel pk-inview flex flex-col p-5 sm:p-6">
             <div>
               <h2 className="text-base font-semibold">Buat pembayaran</h2>
@@ -489,20 +473,20 @@ export default function TopupPage() {
             >
               <div>
                 <div className="flex flex-wrap gap-2">
-                  {presets.map((preset) => {
-                    const active = amount === preset
+                  {TOPUP_PACKAGES.map((pkg) => {
+                    const active = selectedPackage === pkg.id
                     return (
                       <button
-                        key={preset}
+                        key={pkg.id}
                         type="button"
-                        onClick={() => setAmount(preset)}
+                        onClick={() => pickPackage(pkg.id, pkg.amount)}
                         className={`min-h-9 rounded-lg border px-3 text-xs font-medium transition-all ${
                           active
                             ? "border-(--pk-accent)/50 bg-linear-to-r from-[#ffc266] to-[#f0a93b] text-[#10192b] shadow-[0_6px_18px_-8px_rgba(240,169,59,0.9)]"
                             : "border-(--pk-line-2) bg-[#0b1626] text-(--pk-text-dim) hover:border-(--pk-accent)/40 hover:text-(--pk-accent)"
                         }`}
                       >
-                        {rupiah(preset)}
+                        {pkg.name} · {rupiah(pkg.amount)}
                       </button>
                     )
                   })}
@@ -516,17 +500,17 @@ export default function TopupPage() {
                     </span>
                     <input
                       required
-                      min={10000}
-                      max={50000000}
-                      step={1000}
+                      min={TOPUP_MIN}
+                      max={TOPUP_MAX}
+                      step={TOPUP_STEP}
                       type="number"
                       value={amount}
-                      onChange={(e) => setAmount(Number(e.target.value))}
+                      onChange={(e) => onCustomAmount(Number(e.target.value))}
                       className="min-h-12 w-full rounded-xl border border-(--pk-line-2) bg-[#0b1626] pl-10 pr-3 font-mono text-lg text-(--pk-text) outline-none transition-colors focus:border-(--pk-accent) focus:ring-2 focus:ring-(--pk-accent)/25"
                     />
                   </div>
                   <span className="mt-2 block text-xs text-(--pk-text-mute)">
-                    Minimal Rp 10.000 · Maksimal Rp 50.000.000
+                    Minimal {rupiah(TOPUP_MIN)} · Maksimal {rupiah(TOPUP_MAX)}
                   </span>
                 </label>
               </div>
@@ -542,9 +526,7 @@ export default function TopupPage() {
 
               <div className="mt-auto border-t border-(--pk-line) pt-5">
                 <div className="mb-4 flex items-center justify-between text-sm">
-                  <span className="text-(--pk-text-mute)">
-                    Total dibayar
-                  </span>
+                  <span className="text-(--pk-text-mute)">Total dibayar</span>
                   <span className="font-mono text-lg font-semibold text-(--pk-accent)">
                     {rupiah(Number.isFinite(amount) ? amount : 0)}
                   </span>
@@ -566,7 +548,6 @@ export default function TopupPage() {
             </form>
           </section>
 
-          {/* ---- Active Payment ---- */}
           <section className="pk-panel pk-inview flex flex-col p-5 sm:p-6">
             <div>
               <h2 className="text-base font-semibold">Pembayaran aktif</h2>
@@ -620,9 +601,6 @@ export default function TopupPage() {
           </section>
         </div>
 
-        {/* ============================================================
-            RIWAYAT TRANSAKSI
-            ============================================================ */}
         <section className="mt-10">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
@@ -729,9 +707,6 @@ export default function TopupPage() {
         </section>
       </div>
 
-      {/* ============================================================
-          QRIS ZOOM MODAL
-          ============================================================ */}
       {qrisZoomOpen && payment?.qris_url && (
         <div
           role="dialog"
@@ -768,9 +743,7 @@ export default function TopupPage() {
 
               <div className="mt-4 space-y-2 border-t border-neutral-200 pt-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-neutral-500">
-                    Order ID
-                  </span>
+                  <span className="text-xs text-neutral-500">Order ID</span>
                   <span className="font-mono text-xs font-medium text-neutral-900">
                     {payment.order_id}
                   </span>
@@ -807,10 +780,6 @@ export default function TopupPage() {
     </div>
   )
 }
-
-/* ============================================================
-   STATUS BADGE
-   ============================================================ */
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<

@@ -124,54 +124,52 @@ export default function HistoryPage() {
   }, [txns, filter, query]);
 
   return (
-    <div className="relative min-h-screen text-[color:var(--pk-text)]">
-      <header className="border-b border-[color:var(--pk-line)] bg-[#070f1e]/60 px-5 py-8 backdrop-blur-sm sm:px-8">
+    <div className="relative min-h-screen text-(--pk-text)">
+      <header className="border-b border-(--pk-line) bg-[#070f1e]/60 px-5 py-8 backdrop-blur-sm sm:px-8">
         <div className="mx-auto max-w-6xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--pk-accent)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-(--pk-accent)">
             Keuangan
           </p>
           <h1 className="mt-3 text-3xl font-semibold tracking-[-0.035em] sm:text-4xl">
             Riwayat transaksi
           </h1>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-[color:var(--pk-text-dim)]">
+          <p className="mt-3 max-w-xl text-sm leading-6 text-(--pk-text-dim)">
             Riwayat top-up saldo dan pengajuan refund dari akun kamu.
           </p>
         </div>
       </header>
 
       <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
-        {/* ============ STATS ============ */}
         {!loading && !error && stats.total > 0 && (
           <section className="mb-6 grid gap-4 sm:grid-cols-3">
             <div className="pk-panel pk-inview p-5">
-              <p className="text-[11px] uppercase tracking-widest text-[color:var(--pk-text-mute)]">
+              <p className="text-[11px] uppercase tracking-widest text-(--pk-text-mute)">
                 Total transaksi
               </p>
               <p className="mt-3 font-mono text-2xl">{stats.total}</p>
-              <p className="mt-1 text-xs text-[color:var(--pk-text-mute)]">
+              <p className="mt-1 text-xs text-(--pk-text-mute)">
                 {stats.pendingCount} menunggu
               </p>
             </div>
             <div className="pk-panel pk-inview p-5 sm:col-span-2">
-              <p className="text-[11px] uppercase tracking-widest text-[color:var(--pk-text-mute)]">
+              <p className="text-[11px] uppercase tracking-widest text-(--pk-text-mute)">
                 Total saldo masuk
               </p>
-              <p className="mt-3 font-mono text-2xl text-[color:var(--pk-accent)]">
+              <p className="mt-3 font-mono text-2xl text-(--pk-accent)">
                 {rupiah(stats.successAmount)}
               </p>
-              <p className="mt-1 text-xs text-[color:var(--pk-text-mute)]">
+              <p className="mt-1 text-xs text-(--pk-text-mute)">
                 Dari {stats.successCount} transaksi berhasil
               </p>
             </div>
           </section>
         )}
 
-        {/* ============ FILTER BAR ============ */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div
             role="group"
             aria-label="Filter status"
-            className="pk-scroll flex flex-wrap gap-1.5 overflow-x-auto rounded-xl border border-[color:var(--pk-line-2)] bg-[#0b1626] p-1"
+            className="pk-scroll flex flex-wrap gap-1.5 overflow-x-auto rounded-xl border border-(--pk-line-2) bg-[#0b1626] p-1"
           >
             {filters.map((item) => {
               const active = filter === item.value;
@@ -182,8 +180,8 @@ export default function HistoryPage() {
                   aria-pressed={active}
                   className={`min-h-9 whitespace-nowrap rounded-lg px-3 text-xs font-medium transition-all ${
                     active
-                      ? "bg-gradient-to-r from-[#ffc266] to-[#f0a93b] text-[#10192b] shadow-[0_6px_18px_-8px_rgba(240,169,59,0.9)]"
-                      : "text-[color:var(--pk-text-dim)] hover:text-white"
+                      ? "bg-linear-to-r from-[#ffc266] to-[#f0a93b] text-[#10192b] shadow-[0_6px_18px_-8px_rgba(240,169,59,0.9)]"
+                      : "text-(--pk-text-dim) hover:text-white"
                   }`}
                 >
                   {item.label}
@@ -207,12 +205,11 @@ export default function HistoryPage() {
           </button>
         </div>
 
-        {/* ============ SEARCH ============ */}
         {!loading && !error && txns.length > 0 && (
           <div className="relative mt-4">
             <span
               aria-hidden
-              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[color:var(--pk-text-mute)]"
+              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-(--pk-text-mute)"
             >
               <Search size={15} />
             </span>
@@ -221,14 +218,14 @@ export default function HistoryPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Cari Order ID..."
-              className="min-h-11 w-full rounded-xl border border-[color:var(--pk-line-2)] bg-[#0b1626] pl-10 pr-12 text-sm text-[color:var(--pk-text)] outline-none transition-colors placeholder:text-[color:var(--pk-text-mute)] focus:border-[color:var(--pk-accent)] focus:ring-2 focus:ring-[color:var(--pk-accent)]/25"
+              className="min-h-11 w-full rounded-xl border border-(--pk-line-2) bg-[#0b1626] pl-10 pr-12 text-sm text-(--pk-text) outline-none transition-colors placeholder:text-(--pk-text-mute) focus:border-(--pk-accent) focus:ring-2 focus:ring-(--pk-accent)/25"
             />
             {query && (
               <button
                 type="button"
                 onClick={() => setQuery("")}
                 aria-label="Bersihkan pencarian"
-                className="absolute right-3 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[color:var(--pk-text-mute)] transition-colors hover:text-white"
+                className="absolute right-3 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-(--pk-text-mute) transition-colors hover:text-white"
               >
                 <X size={14} />
               </button>
@@ -236,13 +233,12 @@ export default function HistoryPage() {
           </div>
         )}
 
-        {/* ============ TABLE ============ */}
         <div className="pk-panel pk-inview mt-4 overflow-hidden">
           {loading && (
             <div className="flex items-center justify-center py-20">
               <Loader2
                 size={24}
-                className="animate-spin text-[color:var(--pk-text-mute)]"
+                className="animate-spin text-(--pk-text-mute)"
               />
             </div>
           )}
@@ -264,11 +260,11 @@ export default function HistoryPage() {
 
           {!loading && !error && txns.length === 0 && (
             <div className="p-10 text-center">
-              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-[color:var(--pk-line-2)] bg-[#0b1626] text-[color:var(--pk-text-mute)]">
+              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-(--pk-line-2) bg-[#0b1626] text-(--pk-text-mute)">
                 <FileText size={22} />
               </span>
               <p className="mt-5 font-semibold">Belum ada transaksi</p>
-              <p className="mt-2 text-sm text-[color:var(--pk-text-dim)]">
+              <p className="mt-2 text-sm text-(--pk-text-dim)">
                 Transaksi top-up kamu akan muncul di sini setelah dibuat.
               </p>
             </div>
@@ -277,7 +273,7 @@ export default function HistoryPage() {
           {!loading && !error && txns.length > 0 && filtered.length === 0 && (
             <div className="p-10 text-center">
               <p className="font-semibold">Tidak ada transaksi yang cocok.</p>
-              <p className="mt-2 text-sm text-[color:var(--pk-text-dim)]">
+              <p className="mt-2 text-sm text-(--pk-text-dim)">
                 Coba ubah kata kunci atau filter status.
               </p>
               <button
@@ -296,8 +292,8 @@ export default function HistoryPage() {
           {!loading && !error && filtered.length > 0 && (
             <>
               <div className="pk-scroll overflow-x-auto">
-                <table className="w-full min-w-[52rem] text-left text-sm">
-                  <thead className="border-b border-[color:var(--pk-line)] text-[color:var(--pk-text-mute)]">
+                <table className="w-full min-w-208 text-left text-sm">
+                  <thead className="border-b border-(--pk-line) text-(--pk-text-mute)">
                     <tr>
                       <th className="px-5 py-4 text-[11px] font-semibold uppercase tracking-widest">
                         Tanggal
@@ -324,9 +320,9 @@ export default function HistoryPage() {
                       return (
                         <tr
                           key={txn.id}
-                          className="border-b border-[color:var(--pk-line)] transition-colors last:border-0 hover:bg-white/[0.02]"
+                          className="border-b border-(--pk-line) transition-colors last:border-0 hover:bg-white/2"
                         >
-                          <td className="whitespace-nowrap px-5 py-4 text-xs text-[color:var(--pk-text-mute)]">
+                          <td className="whitespace-nowrap px-5 py-4 text-xs text-(--pk-text-mute)">
                             <div>
                               {d.toLocaleDateString("id-ID", {
                                 day: "numeric",
@@ -343,7 +339,7 @@ export default function HistoryPage() {
                           </td>
                           <td className="px-5 py-4">
                             <div className="flex items-center gap-2">
-                              <code className="truncate font-mono text-xs text-[color:var(--pk-text-dim)]">
+                              <code className="truncate font-mono text-xs text-(--pk-text-dim)">
                                 {query ? (
                                   <Highlight
                                     text={txn.order_id}
@@ -362,7 +358,7 @@ export default function HistoryPage() {
                                 className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border transition-colors ${
                                   copied === `order-${txn.id}`
                                     ? "border-[#34d399]/50 bg-[#34d399]/15 text-[#6ee7b7]"
-                                    : "border-transparent text-[color:var(--pk-text-mute)] hover:border-[color:var(--pk-line-2)] hover:text-[color:var(--pk-accent)]"
+                                    : "border-transparent text-(--pk-text-mute) hover:border-(--pk-line-2) hover:text-(--pk-accent)"
                                 }`}
                               >
                                 {copied === `order-${txn.id}` ? (
@@ -373,7 +369,7 @@ export default function HistoryPage() {
                               </button>
                             </div>
                           </td>
-                          <td className="whitespace-nowrap px-5 py-4 text-right font-mono text-[color:var(--pk-text)]">
+                          <td className="whitespace-nowrap px-5 py-4 text-right font-mono text-(--pk-text)">
                             {rupiah(Number(txn.amount_rupiah))}
                           </td>
                           <td className="px-5 py-4">
@@ -386,7 +382,7 @@ export default function HistoryPage() {
                                   type="button"
                                   title="Lihat invoice"
                                   aria-label="Lihat invoice"
-                                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[color:var(--pk-line-2)] text-[color:var(--pk-text-dim)] transition-colors hover:border-[color:var(--pk-accent)]/50 hover:text-[color:var(--pk-accent)]"
+                                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-(--pk-line-2) text-(--pk-text-dim) transition-colors hover:border-(--pk-accent)/50 hover:text-(--pk-accent)"
                                 >
                                   <FileText size={14} />
                                 </button>
@@ -399,7 +395,7 @@ export default function HistoryPage() {
                                 </button>
                               </div>
                             ) : (
-                              <span className="text-xs text-[color:var(--pk-text-mute)]">
+                              <span className="text-xs text-(--pk-text-mute)">
                                 —
                               </span>
                             )}
@@ -411,7 +407,7 @@ export default function HistoryPage() {
                 </table>
               </div>
 
-              <div className="border-t border-[color:var(--pk-line)] px-5 py-3 text-xs text-[color:var(--pk-text-mute)]">
+              <div className="border-t border-(--pk-line) px-5 py-3 text-xs text-(--pk-text-mute)">
                 Menampilkan {filtered.length} dari {txns.length} transaksi
               </div>
             </>
@@ -439,16 +435,16 @@ function StatusBadge({ status }: { status: string }) {
     credited: { color: "text-[#6ee7b7]", dot: "bg-[#34d399]" },
     paid: { color: "text-[#6ee7b7]", dot: "bg-[#34d399]" },
     pending: {
-      color: "text-[color:var(--pk-accent)]",
-      dot: "bg-[color:var(--pk-accent)]",
+      color: "text-(--pk-accent)",
+      dot: "bg-(--pk-accent)",
     },
     refunded: { color: "text-[#60a5fa]", dot: "bg-[#60a5fa]" },
     expired: { color: "text-[#fca5a5]", dot: "bg-[#f87171]" },
     failed: { color: "text-[#fca5a5]", dot: "bg-[#f87171]" },
   };
   const cfg = map[status] ?? {
-    color: "text-[color:var(--pk-text-dim)]",
-    dot: "bg-[color:var(--pk-line-2)]",
+    color: "text-(--pk-text-dim)",
+    dot: "bg-(--pk-line-2)",
   };
   return (
     <span className={`inline-flex items-center gap-2 text-sm ${cfg.color}`}>
@@ -469,7 +465,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
   return (
     <>
       {before}
-      <mark className="rounded bg-[color:var(--pk-accent)]/25 px-0.5 text-[color:var(--pk-accent-2)]">
+      <mark className="rounded bg-(--pk-accent)/25 px-0.5 text-(--pk-accent-2)">
         {match}
       </mark>
       {after}
@@ -540,7 +536,7 @@ function RefundModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="refund-title"
-      className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+      className="fixed inset-0 z-60 flex items-center justify-center p-4"
     >
       <div
         aria-hidden
@@ -554,35 +550,35 @@ function RefundModal({
           onClick={onClose}
           disabled={loading}
           aria-label="Tutup"
-          className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--pk-text-mute)] transition-colors hover:bg-white/5 hover:text-white disabled:opacity-40"
+          className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-lg text-(--pk-text-mute) transition-colors hover:bg-white/5 hover:text-white disabled:opacity-40"
         >
           <X size={16} />
         </button>
 
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[color:var(--pk-accent)]/30 bg-[color:var(--pk-accent)]/10">
-          <AlertTriangle size={20} className="text-[color:var(--pk-accent)]" />
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-(--pk-accent)/30 bg-(--pk-accent)/10">
+          <AlertTriangle size={20} className="text-(--pk-accent)" />
         </div>
 
         <h2
           id="refund-title"
-          className="mt-4 text-lg font-semibold text-[color:var(--pk-text)]"
+          className="mt-4 text-lg font-semibold text-(--pk-text)"
         >
           Ajukan refund?
         </h2>
-        <p className="mt-2 text-sm leading-6 text-[color:var(--pk-text-dim)]">
+        <p className="mt-2 text-sm leading-6 text-(--pk-text-dim)">
           Pengajuan akan ditinjau admin. Saldo tidak langsung berubah.
         </p>
 
-        <dl className="mt-4 space-y-2 rounded-xl border border-[color:var(--pk-line)] bg-[#0b1626]/60 p-4 text-sm">
+        <dl className="mt-4 space-y-2 rounded-xl border border-(--pk-line) bg-[#0b1626]/60 p-4 text-sm">
           <div className="flex items-center justify-between gap-3">
-            <dt className="text-[color:var(--pk-text-mute)]">Order ID</dt>
-            <dd className="truncate font-mono text-xs text-[color:var(--pk-text)]">
+            <dt className="text-(--pk-text-mute)">Order ID</dt>
+            <dd className="truncate font-mono text-xs text-(--pk-text)">
               {transaction.order_id}
             </dd>
           </div>
           <div className="flex items-center justify-between gap-3">
-            <dt className="text-[color:var(--pk-text-mute)]">Nominal</dt>
-            <dd className="font-mono text-[color:var(--pk-accent)]">
+            <dt className="text-(--pk-text-mute)">Nominal</dt>
+            <dd className="font-mono text-(--pk-accent)">
               {rupiah(Number(transaction.amount_rupiah))}
             </dd>
           </div>
@@ -603,7 +599,7 @@ function RefundModal({
               onChange={(e) => setReason(e.target.value)}
               rows={3}
               placeholder="Ceritakan kenapa kamu mengajukan refund..."
-              className="mt-1.5 w-full resize-none rounded-xl border border-[color:var(--pk-line-2)] bg-[#0b1626] px-3.5 py-2.5 text-sm text-[color:var(--pk-text)] outline-none transition-colors placeholder:text-[color:var(--pk-text-mute)] focus:border-[color:var(--pk-accent)] focus:ring-2 focus:ring-[color:var(--pk-accent)]/25"
+              className="mt-1.5 w-full resize-none rounded-xl border border-(--pk-line-2) bg-[#0b1626] px-3.5 py-2.5 text-sm text-(--pk-text) outline-none transition-colors placeholder:text-(--pk-text-mute) focus:border-(--pk-accent) focus:ring-2 focus:ring-(--pk-accent)/25"
             />
           </label>
 

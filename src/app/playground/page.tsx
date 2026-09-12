@@ -39,10 +39,10 @@ const TRIAL_MODELS: TrialModel[] = [
     description: "Ringan, responsif untuk task pendek",
   },
   {
-    id: "gemini-flash",
-    name: "Gemini Flash",
+    id: "glm-4-flash",
+    name: "GLM-4 Flash",
     tier: "Murah",
-    description: "Generasi cepat dari Google",
+    description: "Generasi cepat dari Zhipu AI",
   },
 ]
 
@@ -72,7 +72,6 @@ export default function PlaygroundPage() {
   const canSubmit =
     !!user && prompt.trim().length > 0 && !loading && !limitReached
 
-  // Scroll otomatis ke output saat muncul
   useEffect(() => {
     if (output && outputRef.current) {
       outputRef.current.scrollIntoView({
@@ -136,7 +135,7 @@ export default function PlaygroundPage() {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      // ignore
+      /* ignore */
     }
   }
 
@@ -148,13 +147,11 @@ export default function PlaygroundPage() {
 
   return (
     <div className="relative min-h-screen text-(--pk-text)">
-      {/* Background */}
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,#0f1e38_0%,#050b16_55%,#03070e_100%)]" />
         <div className="pk-grid absolute inset-0" />
       </div>
 
-      {/* Header */}
       <header className="border-b border-(--pk-line) bg-[#070f1e]/60 px-5 py-12 backdrop-blur-sm sm:px-8 sm:py-16">
         <div className="mx-auto max-w-6xl">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-(--pk-accent)">
@@ -174,9 +171,7 @@ export default function PlaygroundPage() {
 
       <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-12">
         <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-          {/* Main Content */}
           <div className="space-y-5">
-            {/* Model Selection */}
             <section className="pk-panel pk-inview p-5 sm:p-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -237,7 +232,6 @@ export default function PlaygroundPage() {
               </div>
             </section>
 
-            {/* Prompt Input */}
             <section className="pk-panel pk-inview p-5 sm:p-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -326,7 +320,6 @@ export default function PlaygroundPage() {
               </div>
             </section>
 
-            {/* Output */}
             {output && (
               <section
                 ref={outputRef}
@@ -363,16 +356,14 @@ export default function PlaygroundPage() {
                   </button>
                 </div>
 
-                <pre className="pk-terminal mt-4 max-h-[400px] overflow-x-auto rounded-xl border border-(--pk-line-2) bg-[#050b16] p-4 font-mono text-[12.5px] leading-6 whitespace-pre-wrap text-(--pk-text)">
+                <pre className="pk-terminal mt-4 max-h-100 overflow-x-auto rounded-xl border border-(--pk-line-2) bg-[#050b16] p-4 font-mono text-[12.5px] leading-6 whitespace-pre-wrap text-(--pk-text)">
                   <code>{output}</code>
                 </pre>
               </section>
             )}
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-5">
-            {/* Trial Info */}
             <section className="pk-panel pk-inview p-5 sm:p-6">
               <div className="flex items-center gap-2">
                 <Zap size={14} className="text-(--pk-accent)" />
@@ -414,7 +405,6 @@ export default function PlaygroundPage() {
                 </div>
               </dl>
 
-              {/* Progress bar */}
               <div className="mt-5">
                 <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#0b1626]">
                   <div
@@ -434,7 +424,6 @@ export default function PlaygroundPage() {
               </div>
             </section>
 
-            {/* Tips */}
             <section className="pk-panel pk-inview p-5 sm:p-6">
               <div className="flex items-center gap-2">
                 <Bot size={14} className="text-(--pk-accent)" />
@@ -480,7 +469,6 @@ export default function PlaygroundPage() {
               </ul>
             </section>
 
-            {/* CTA Login/Upgrade */}
             {!user ? (
               <section className="pk-panel pk-inview relative overflow-hidden border-(--pk-accent)/40 bg-linear-to-br from-(--pk-accent)/15 via-transparent to-transparent p-5 sm:p-6">
                 <div
